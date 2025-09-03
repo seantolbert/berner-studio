@@ -4,9 +4,16 @@ import ControlPanel from "./ControlPanel";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onRandomize?: () => void;
+  size: "small" | "regular" | "large";
+  onSelectSize: (s: "small" | "regular" | "large") => void;
 };
 
-export default function Drawer({ isOpen, onClose }: Props) {
+export default function Drawer({ isOpen, onClose, onUndo, onRedo, canUndo, canRedo, onRandomize, size, onSelectSize }: Props) {
   return (
     <>
       {/* Backdrop */}
@@ -49,12 +56,11 @@ export default function Drawer({ isOpen, onClose }: Props) {
           </div>
 
           <div className="flex-1 p-3 grid grid-rows-[40%_1fr] gap-3 overflow-hidden">
-            <SizeSelector />
-            <ControlPanel />
+            <SizeSelector selected={size} onSelect={onSelectSize} />
+            <ControlPanel onUndo={onUndo} onRedo={onRedo} onRandomize={onRandomize} canUndo={!!canUndo} canRedo={!!canRedo} />
           </div>
         </div>
       </aside>
     </>
   );
 }
-

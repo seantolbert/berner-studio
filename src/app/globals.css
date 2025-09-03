@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Trapezoid side tab used for the drawer toggle */
+.trapezoid-tab {
+  /* Long vertical side on the right, angled on the left */
+  clip-path: polygon(0% 12%, 100% 0%, 100% 100%, 0% 88%);
+}

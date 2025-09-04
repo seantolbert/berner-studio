@@ -6,7 +6,13 @@ type Props = {
   canRedo?: boolean;
 };
 
-export default function ControlPanel({ onUndo, onRedo, onRandomize, canUndo = false, canRedo = false }: Props) {
+export default function ControlPanel({
+  onUndo,
+  onRedo,
+  onRandomize,
+  canUndo = false,
+  canRedo = false,
+}: Props) {
   return (
     <section className="rounded-md bg-black/[.02] dark:bg-white/[.04] h-full w-full flex items-center justify-center overflow-y-auto">
       <div className="flex flex-col items-center gap-4 py-2">
@@ -29,11 +35,12 @@ export default function ControlPanel({ onUndo, onRedo, onRandomize, canUndo = fa
             className="h-6 w-6"
             aria-hidden="true"
           >
-            <path d="M16 3h5v5" />
-            <path d="M4 20l9-9" />
-            <path d="M21 8c-4 0-6 2-9 5s-5 4-9 4" />
-            <path d="M3 3h5v5" />
-            <path d="M8 3C4 3 3 5 3 8" />
+            {/* Feather-like shuffle icon */}
+            <polyline points="16 3 21 3 21 8" />
+            <line x1="4" y1="20" x2="21" y2="3" />
+            <polyline points="21 16 21 21 16 21" />
+            <line x1="15" y1="15" x2="21" y2="21" />
+            <line x1="4" y1="4" x2="9" y2="9" />
           </svg>
         </button>
 
@@ -45,7 +52,9 @@ export default function ControlPanel({ onUndo, onRedo, onRandomize, canUndo = fa
           onClick={onUndo}
           disabled={!canUndo}
           className={`h-12 w-12 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shadow-sm active:scale-[.98] ${
-            canUndo ? 'bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10' : 'opacity-50 cursor-not-allowed bg-white/40 dark:bg-black/10'
+            canUndo
+              ? "bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10"
+              : "opacity-50 cursor-not-allowed bg-white/40 dark:bg-black/10"
           }`}
         >
           <svg
@@ -72,7 +81,9 @@ export default function ControlPanel({ onUndo, onRedo, onRandomize, canUndo = fa
           onClick={onRedo}
           disabled={!canRedo}
           className={`h-12 w-12 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shadow-sm active:scale-[.98] ${
-            canRedo ? 'bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10' : 'opacity-50 cursor-not-allowed bg-white/40 dark:bg-black/10'
+            canRedo
+              ? "bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10"
+              : "opacity-50 cursor-not-allowed bg-white/40 dark:bg-black/10"
           }`}
         >
           <svg

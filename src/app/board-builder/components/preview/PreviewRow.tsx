@@ -49,7 +49,8 @@ const PreviewRow = forwardRef(function PreviewRow(
   ref: ForwardedRef<HTMLButtonElement>
 ) {
   const ringActive = selected || deselecting;
-  const paddingClass = selected ? "py-6" : "py-0";
+  // Tighter selection padding to avoid large vertical jumps
+  const paddingClass = selected ? "py-2" : "py-0";
   return (
     <button
       ref={ref}

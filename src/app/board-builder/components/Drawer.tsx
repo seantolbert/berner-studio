@@ -13,13 +13,25 @@ type Props = {
   onSelectSize: (s: "small" | "regular" | "large") => void;
 };
 
-export default function Drawer({ isOpen, onClose, onUndo, onRedo, canUndo, canRedo, onRandomize, size, onSelectSize }: Props) {
+export default function Drawer({
+  isOpen,
+  onClose,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+  onRandomize,
+  size,
+  onSelectSize,
+}: Props) {
   return (
     <>
       {/* Backdrop */}
       <div
         className={`fixed inset-0 bg-black/40 transition-opacity duration-300 z-40 ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
         aria-hidden="true"
@@ -55,9 +67,15 @@ export default function Drawer({ isOpen, onClose, onUndo, onRedo, canUndo, canRe
             </button>
           </div>
 
-          <div className="flex-1 p-3 grid grid-rows-[40%_1fr] gap-3 overflow-hidden">
+          <div className="flex-1 grid grid-rows-[50%_1fr] gap-3 overflow-hidden">
             <SizeSelector selected={size} onSelect={onSelectSize} />
-            <ControlPanel onUndo={onUndo} onRedo={onRedo} onRandomize={onRandomize} canUndo={!!canUndo} canRedo={!!canRedo} />
+            <ControlPanel
+              onUndo={onUndo}
+              onRedo={onRedo}
+              onRandomize={onRandomize}
+              canUndo={!!canUndo}
+              canRedo={!!canRedo}
+            />
           </div>
         </div>
       </aside>

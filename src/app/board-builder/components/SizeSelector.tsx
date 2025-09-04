@@ -5,7 +5,7 @@ type Props = {
 
 export default function SizeSelector({ selected, onSelect }: Props) {
   const baseBtn =
-    "w-full h-24 rounded-md border transition bg-white/50 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center focus:outline-none";
+    "w-full h-14 rounded-md border transition bg-white/50 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center focus:outline-none";
   const ring = "focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30";
   const border = "border-black/10 dark:border-white/10";
 
@@ -42,17 +42,23 @@ export default function SizeSelector({ selected, onSelect }: Props) {
           <Item
             value="small"
             label={'9.5" x 9.5"'}
-            shape={<div className="w-12 h-12 rounded-sm border-2 border-current" />}
+            shape={
+              <div className="w-8 h-8 rounded-sm border-2 border-current" />
+            }
           />
           <Item
             value="regular"
             label={'10" x 14"'}
-            shape={<div className="w-10 h-16 rounded-sm border-2 border-current" />}
+            shape={
+              <div className="w-6 h-10 rounded-sm border-2 border-current" />
+            }
           />
           <Item
             value="large"
             label={'12" x 16"'}
-            shape={<div className="w-12 h-20 rounded-sm border-2 border-current" />}
+            shape={
+              <div className="w-8 h-12 rounded-sm border-2 border-current" />
+            }
           />
         </div>
       </div>

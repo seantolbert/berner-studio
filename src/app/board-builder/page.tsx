@@ -22,6 +22,7 @@ export default function BoardBuilderPage() {
     handleRandomize,
     handleReorder,
     handleReverseRow,
+    handleChangeRowStrip,
     canUndo,
     canRedo,
     handleUndo,
@@ -41,7 +42,7 @@ export default function BoardBuilderPage() {
 
   return (
     <main
-      className="relative grid grid-rows-[50%_40%] h-[100svh] w-full overflow-hidden"
+      className="relative grid grid-rows-[50%_40%] h-[100svh] w-full"
       style={vh ? { height: `${vh}px` } : undefined}
     >
       <DrawerToggleTab
@@ -54,8 +55,9 @@ export default function BoardBuilderPage() {
         onToggleDrawer={() => setIsOpen((v) => !v)}
         boardData={boardData}
         size={size}
-        onReorder={handleReorder}
         onReverseRow={handleReverseRow}
+        strip3Enabled={strip3Enabled}
+        onChangeRowStrip={handleChangeRowStrip}
       />
       <StripBuilder
         boardData={boardData}

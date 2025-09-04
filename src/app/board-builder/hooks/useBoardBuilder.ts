@@ -131,6 +131,21 @@ export function useBoardBuilder() {
     });
   };
 
+  const handleChangeRowStrip = (rowIndex: number, stripNo: number) => {
+    setBoardDataWithHistory((prev) => {
+      const next = clone(prev);
+      if (rowIndex < 0 || rowIndex >= next.order.length) return next;
+      const maxStrip = strip3Enabled ? 3 : 2;
+      const desired = Math.min(Math.max(1, stripNo), maxStrip);
+      next.order[rowIndex] = {
+        ...next.order[rowIndex],
+        stripNo: desired,
+      };
+      console.log("Row strip changed.", { rowIndex, stripNo: desired, next });
+      return next;
+    });
+  };
+
   const toggleStrip3 = () => setStrip3Enabled((v) => !v);
 
   return {
@@ -145,6 +160,7 @@ export function useBoardBuilder() {
     handleRandomize,
     handleReorder,
     handleReverseRow,
+    handleChangeRowStrip,
     canUndo,
     canRedo,
     handleUndo,

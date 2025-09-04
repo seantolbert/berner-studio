@@ -1,5 +1,5 @@
+import { useMemo, useState } from "react";
 import PreviewRow from "./preview/PreviewRow";
-import useRowDnD from "./preview/useRowDnD";
 
 type Props = {
   isDrawerOpen: boolean;
@@ -8,9 +8,10 @@ type Props = {
     strips: (string | null)[][];
     order: { stripNo: number; reflected: boolean }[];
   };
-  size: import("./preview/useRowDnD").Size;
-  onReorder?: (nextOrder: import("./preview/useRowDnD").RowOrder[]) => void;
+  size: "small" | "regular" | "large";
   onReverseRow?: (rowIndex: number) => void;
+  strip3Enabled?: boolean;
+  onChangeRowStrip?: (rowIndex: number, stripNo: number) => void;
 };
 
 export default function BoardPreview({
@@ -18,29 +19,46 @@ export default function BoardPreview({
   onToggleDrawer,
   boardData,
   size,
-  onReorder,
   onReverseRow,
+  strip3Enabled = false,
+  onChangeRowStrip,
 }: Props) {
   const cols = boardData.strips[0]?.length ?? 12;
   const cellPx = 16; // fixed square size in pixels
-  const {
-    selectedRow,
-    deselectingRows,
-    dragIndex,
-    dragOverIndex,
-    rowRefs,
-    effectiveOrder,
-    onRowClick,
-    onRowDragStart,
-    onRowDragOver,
-    onRowDrop,
-    onRowDragEnd,
-    onRowTouchStart,
-    onRowTouchMove,
-    onRowTouchEnd,
-    onRowTouchCancel,
-    onRowTransitionEnd,
-  } = useRowDnD({ order: boardData.order, size, onReorder });
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [deselectingRows, setDeselectingRows] = useState<Set<number>>(
+    new Set()
+  );
+  const effectiveOrder = useMemo(() => {
+    if (boardData.order && boardData.order.length) return boardData.order;
+    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    return Array.from({ length: rows }, (_, i) => ({
+      stripNo: i % 2 === 0 ? 1 : 2,
+      reflected: false,
+    }));
+  }, [boardData.order, size]);
+  const onRowClick = (index: number) => {
+    setSelectedRow((prev) => {
+      if (prev === index) {
+        const next = new Set(deselectingRows);
+        next.add(index);
+        setDeselectingRows(next);
+        return null;
+      }
+      return index;
+    });
+  };
+  const onRowTransitionEnd = (
+    index: number,
+    e: React.TransitionEvent<HTMLButtonElement>
+  ) => {
+    if (!deselectingRows.has(index)) return;
+    if (e.propertyName.includes("padding")) {
+      const next = new Set(deselectingRows);
+      next.delete(index);
+      setDeselectingRows(next);
+    }
+  };
 
   return (
     <section className="row-span-1 flex items-center justify-center border-b border-black/10 dark:border-white/10">
@@ -48,11 +66,7 @@ export default function BoardPreview({
         {/* Preview grid */}
         <div className="absolute inset-0 p-2 pt-6 pr-3 sm:p-4 sm:pt-12 sm:pr-6">
           <div
-            className={`h-full w-full overflow-hidden flex flex-col items-center justify-center gap-[2px] ${
-              dragIndex !== null
-                ? "touch-none select-none overscroll-contain"
-                : ""
-            }`}
+            className={`h-full w-full overflow-hidden flex flex-col items-center justify-center gap-[2px]`}
           >
             {effectiveOrder.map((rowObj, i) => {
               const stripIndex = Math.max(
@@ -67,30 +81,6 @@ export default function BoardPreview({
               const handleClick: React.MouseEventHandler<
                 HTMLButtonElement
               > = () => onRowClick(i);
-              const handleDragStart: React.DragEventHandler<
-                HTMLButtonElement
-              > = (e) => onRowDragStart(i, e);
-              const handleDragOver: React.DragEventHandler<
-                HTMLButtonElement
-              > = (e) => onRowDragOver(i, e);
-              const handleDrop: React.DragEventHandler<HTMLButtonElement> = (
-                e
-              ) => onRowDrop(i, e);
-              const handleDragEnd: React.DragEventHandler<
-                HTMLButtonElement
-              > = () => onRowDragEnd();
-              const handleTouchStart: React.TouchEventHandler<
-                HTMLButtonElement
-              > = () => onRowTouchStart(i);
-              const handleTouchMove: React.TouchEventHandler<
-                HTMLButtonElement
-              > = (e) => onRowTouchMove(e);
-              const handleTouchEnd: React.TouchEventHandler<
-                HTMLButtonElement
-              > = () => onRowTouchEnd(i);
-              const handleTouchCancel: React.TouchEventHandler<
-                HTMLButtonElement
-              > = () => onRowTouchCancel();
               const handleTransitionEnd = (
                 idx: number,
                 e: React.TransitionEvent<HTMLButtonElement>
@@ -143,7 +133,7 @@ export default function BoardPreview({
                           </svg>
                         </button>
 
-                        {/* Strip changer menu (UI only) */}
+                        {/* Strip changer menu */}
                         {active && (
                           <div
                             className={`${
@@ -152,27 +142,61 @@ export default function BoardPreview({
                                 : "top-full mt-1"
                             } absolute left-0 w-12 rounded-md border border-black/15 dark:border-white/15 bg-white/90 dark:bg-black/50 backdrop-blur shadow p-1.5`}
                           >
-                            <div className="flex flex-col gap-1">
-                              <div className="text-[8px] text-center font-semibold uppercase mb-1 text-foreground/80">
-                                Change
+                            <div className="flex flex-col gap-3">
+                              <div>
+                                <div className="text-[8px] text-center font-semibold uppercase text-foreground/80">
+                                  Change
+                                </div>
+                                <div className="text-[8px] text-center font-semibold uppercase text-foreground/80">
+                                  strip
+                                </div>
                               </div>
                               <button
                                 type="button"
-                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[11px] hover:bg-black/5 dark:hover:bg-white/10"
+                                onClick={() => onChangeRowStrip?.(i, 1)}
+                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[14px] hover:bg-black/5 dark:hover:bg-white/10"
                               >
                                 1
                               </button>
                               <button
                                 type="button"
-                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[11px] hover:bg-black/5 dark:hover:bg-white/10"
+                                onClick={() => onChangeRowStrip?.(i, 2)}
+                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[14px] hover:bg-black/5 dark:hover:bg-white/10"
                               >
                                 2
                               </button>
                               <button
                                 type="button"
-                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[11px] hover:bg-black/5 dark:hover:bg-white/10"
+                                onClick={() => {
+                                  if (!strip3Enabled) return;
+                                  onChangeRowStrip?.(i, 3);
+                                }}
+                                disabled={!strip3Enabled}
+                                aria-disabled={!strip3Enabled}
+                                className={`relative h-6 rounded border border-black/15 dark:border-white/15 text-[14px] ${
+                                  strip3Enabled
+                                    ? "hover:bg-black/5 dark:hover:bg-white/10"
+                                    : "opacity-50 cursor-not-allowed"
+                                }`}
                               >
                                 3
+                                {!strip3Enabled && (
+                                  <svg
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <line
+                                      x1="4"
+                                      y1="20"
+                                      x2="20"
+                                      y2="4"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                )}
                               </button>
                             </div>
                           </div>
@@ -182,7 +206,6 @@ export default function BoardPreview({
                   })()}
                   <div className="relative inline-block">
                     <PreviewRow
-                      ref={(el) => (rowRefs.current[i] = el)}
                       index={i}
                       stripNo={rowObj?.stripNo as number}
                       colors={displayColors as any}
@@ -191,17 +214,7 @@ export default function BoardPreview({
                       cellPx={cellPx}
                       selected={selectedRow === i}
                       deselecting={deselectingRows.has(i)}
-                      dragging={dragIndex === i}
-                      dragOver={dragOverIndex === i}
                       onClick={() => handleClick()}
-                      onDragStart={(_, e) => handleDragStart(e)}
-                      onDragOver={(_, e) => handleDragOver(e)}
-                      onDrop={(_, e) => handleDrop(e)}
-                      onDragEnd={() => handleDragEnd()}
-                      onTouchStart={() => handleTouchStart()}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={() => handleTouchEnd()}
-                      onTouchCancel={handleTouchCancel}
                       onTransitionEnd={handleTransitionEnd}
                     />
                     <span className="pointer-events-none absolute left-full ml-1 top-1/2 -translate-y-1/2 z-20 text-sm sm:text-base font-semibold text-foreground/90">

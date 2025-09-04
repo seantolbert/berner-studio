@@ -11,7 +11,7 @@ export default function AvailableWoods({ selectedKey, onSelect }: Props) {
   const selectedWood = WOODS.find((w) => w.key === selectedKey);
 
   return (
-    <div className="relative rounded-lg  w-full">
+    <div className="relative w-full">
       {/* Header row: title left, selected name right */}
       <div className="flex items-center justify-between px-3">
         <h3 className="text-sm font-medium">Available Woods</h3>
@@ -22,7 +22,7 @@ export default function AvailableWoods({ selectedKey, onSelect }: Props) {
 
       {/* Squares row */}
       <div className="h-full w-full flex items-center justify-center">
-        <div className="w-full px-3 pt-2 pb-3 overflow-x-auto">
+        <div className="w-full px-3 pb-3 overflow-x-auto">
           <div className="flex items-center gap-3 min-w-max">
             {WOODS.map((wood) => (
               <button

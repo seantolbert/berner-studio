@@ -27,8 +27,8 @@ export default function StripBuilder({
   const [selectedWoodKey, setSelectedWoodKey] = useState<string | null>(null);
 
   return (
-    <section className="row-span-1">
-      <div className="w-full h-full grid grid-rows-[20%_1fr_auto] gap-2">
+    <section className="row-span-1 pt-2">
+      <div className="w-full h-full grid gap-2">
         <AvailableWoods
           selectedKey={selectedWoodKey}
           onSelect={setSelectedWoodKey}
@@ -40,7 +40,7 @@ export default function StripBuilder({
           strip3Enabled={strip3Enabled}
           onToggleStrip3={onToggleStrip3}
         />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {/* Back button (1/3 width) */}
           <button
             type="button"

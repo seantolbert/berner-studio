@@ -67,8 +67,14 @@ export default function Strips({
         onClick={row === 2 ? onToggleStrip3 : undefined}
         disabled={row !== 2}
         aria-pressed={row === 2 ? strip3Enabled : undefined}
-        title={row === 2 ? (strip3Enabled ? "Disable strip 3" : "Enable strip 3") : undefined}
-        className={`inline-flex items-center justify-center h-8 sm:h-8 w-8 rounded-sm border border-black/15 dark:border-white/15 text-xs font-medium ${
+        title={
+          row === 2
+            ? strip3Enabled
+              ? "Disable strip 3"
+              : "Enable strip 3"
+            : undefined
+        }
+        className={`inline-flex items-center justify-center h-8 sm:h-8 w-8 rounded-full border border-black/15 dark:border-white/15 text-xs font-medium ${
           row === 2 && !strip3Enabled ? "opacity-60" : ""
         }`}
       >
@@ -77,14 +83,16 @@ export default function Strips({
 
       {/* Cells scroller */}
       <div className="flex-1 w-px overflow-x-auto">
-        <div className={`h-full flex items-center min-w-max gap-1`}>
+        <div
+          className={`h-full flex items-center justify-center min-w-max gap-x-1.25`}
+        >
           {boardData.strips[row].map((cellColor, i) => (
             <button
               key={i}
               type="button"
               onClick={() => handlePaint(row, i)}
-              className={`h-8 ${
-                boardData.strips[row].length >= 14 ? "w-5" : "w-6"
+              className={`h-10 ${
+                boardData.strips[row].length >= 14 ? "w-4" : "w-5"
               } rounded-sm border border-black/15 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 ${
                 cellColor ? "bg-transparent" : "bg-white/60 dark:bg-black/20"
               }`}
@@ -125,10 +133,21 @@ export default function Strips({
 
   return (
     <div className="relative rounded-lg h-full w-full p-3">
-      <div className="grid grid-rows-3 gap-2">
+      <div className="grid grid-rows-3 gap-5">
         <StripRow row={0} />
         <StripRow row={1} />
-        <StripRow row={2} />
+        {strip3Enabled ? (
+          <StripRow row={2} />
+        ) : (
+          <button
+            type="button"
+            onClick={onToggleStrip3}
+            aria-label="Add a third strip"
+            className="w-full h-8 inline-flex items-center justify-center rounded-sm border border-black/15 dark:border-white/15 bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-medium"
+          >
+            Add a 3rd strip
+          </button>
+        )}
       </div>
     </div>
   );

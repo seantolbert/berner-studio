@@ -1,4 +1,5 @@
 import { ForwardedRef, forwardRef } from "react";
+import { styleForToken } from "../woods";
 
 type Props = {
   index: number;
@@ -55,7 +56,7 @@ const PreviewRow = forwardRef(function PreviewRow(
             style={{
               width: `${cellPx}px`,
               height: `${cellPx}px`,
-              backgroundColor: typeof c === "string" ? c : "transparent",
+              ...(typeof c === "string" ? styleForToken(c, cellPx) : { backgroundColor: "transparent" }),
             }}
           />
         )

@@ -1,6 +1,7 @@
 "use client";
 
-import { woodByKey } from "./woods";
+import { woodByKey, styleForToken } from "./woods";
+import { useModal } from "./modal/ModalProvider";
 
 type Props = {
   selectedKey: string | null;
@@ -33,7 +34,9 @@ export default function Strips({
   strip3Enabled,
   onToggleStrip3,
 }: Props) {
-  const handleClear = (row: number) => {
+  const { open, close } = useModal();
+
+  const clearRow = (row: number) => {
     const cols = boardData.strips[row]?.length ?? 12;
     const next = {
       strips: boardData.strips.map((r, ri) =>
@@ -44,16 +47,40 @@ export default function Strips({
     console.log("Board Data (cleared strip):", next);
     setBoardData(next);
   };
+
+  const confirmClear = (row: number) => {
+    const rowLabel = `row ${row + 1}`;
+    open(
+      <div className="flex flex-col gap-4">
+        <p className="text-sm">
+          Are you sure you want to clear {rowLabel}?
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            clearRow(row);
+            close();
+          }}
+          className="inline-flex items-center justify-center h-9 px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 active:scale-[.99]"
+        >
+          Clear
+        </button>
+      </div>,
+      { title: "Confirm Clear", size: "sm", dismissible: true }
+    );
+  };
   const handlePaint = (row: number, col: number) => {
     if (!selectedKey) return;
-    const color = woodByKey[selectedKey]?.color ?? null;
+    const key = selectedKey;
+    // No-op if the cell is already this wood key
+    if (boardData.strips[row][col] === key) return;
     const next = {
       strips: boardData.strips.map((r, ri) =>
         ri === row ? r.slice() : r.slice()
       ),
       order: boardData.order.map((o) => ({ ...o })),
     };
-    next.strips[row][col] = color;
+    next.strips[row][col] = key;
     // Log the JSON object after update
     console.log("Board Data:", next);
     setBoardData(next);
@@ -96,7 +123,14 @@ export default function Strips({
               } rounded-sm border border-black/15 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 ${
                 cellColor ? "bg-transparent" : "bg-white/60 dark:bg-black/20"
               }`}
-              style={cellColor ? { backgroundColor: cellColor } : undefined}
+              style={
+                cellColor
+                  ? styleForToken(
+                      cellColor,
+                      boardData.strips[row].length >= 14 ? 16 : 20
+                    )
+                  : undefined
+              }
               aria-label={`Row ${row + 1} cell ${i + 1}`}
             />
           ))}
@@ -108,7 +142,7 @@ export default function Strips({
         type="button"
         aria-label="Clear strip"
         title="Clear strip"
-        onClick={() => handleClear(row)}
+        onClick={() => confirmClear(row)}
         className="inline-flex items-center justify-center h-8 w-8 rounded-sm border border-black/15 dark:border-white/15 bg-white/70 dark:bg-black/30 hover:bg-black/5 dark:hover:bg-white/10"
       >
         <svg

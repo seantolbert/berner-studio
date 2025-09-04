@@ -36,7 +36,10 @@ export default function AvailableWoods({ selectedKey, onSelect }: Props) {
                     ? "border-black/60 dark:border-white/60 ring-2 ring-black/30 dark:ring-white/30"
                     : "border-black/15 dark:border-white/15"
                 }`}
-                style={{ backgroundColor: wood.color }}
+                style={{
+                  backgroundColor: wood.color,
+                  ...(wood.pattern ? wood.pattern(16) : {}),
+                }}
               >
                 <span className="sr-only">{wood.name}</span>
               </button>

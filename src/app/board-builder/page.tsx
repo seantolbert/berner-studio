@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import BoardPreview from "./components/BoardPreview";
 import StripBuilder from "./components/StripBuilder";
 import Drawer from "./components/Drawer";
 import DrawerToggleTab from "./components/DrawerToggleTab";
 import { useViewportHeight } from "./hooks/useViewportHeight";
 import { useBoardBuilder } from "./hooks/useBoardBuilder";
+import { ModalProvider, ModalRoot } from "./components/modal/ModalProvider";
+import { useRouter } from "next/navigation";
+import { LS_SELECTED_TEMPLATE_KEY } from "../templates";
 
 export default function BoardBuilderPage() {
   const vh = useViewportHeight();
@@ -27,7 +30,11 @@ export default function BoardBuilderPage() {
     canRedo,
     handleUndo,
     handleRedo,
+    loadTemplate,
+    resetToBlank,
   } = useBoardBuilder();
+  const router = useRouter();
+  const loadedRef = useRef(false);
 
   const handleChangeRowOrder = (_rowIndex: number, _stripNo: number) => {};
 
@@ -40,42 +47,73 @@ export default function BoardBuilderPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Load template from localStorage or redirect back to selection
+  useEffect(() => {
+    if (loadedRef.current) return;
+    try {
+      const raw = localStorage.getItem(LS_SELECTED_TEMPLATE_KEY);
+      if (!raw) {
+        router.replace("/");
+        return;
+      }
+      if (raw === "__blank__") {
+        resetToBlank("regular");
+        loadedRef.current = true;
+        return;
+      }
+      const tpl = JSON.parse(raw);
+      // Basic shape check
+      if (!tpl || !tpl.strips || !tpl.order) {
+        router.replace("/");
+        return;
+      }
+      loadTemplate(tpl);
+      loadedRef.current = true;
+    } catch (e) {
+      router.replace("/");
+    }
+  }, [router, loadTemplate, resetToBlank]);
+
   return (
-    <main
-      className="relative grid grid-rows-[50%_40%] h-[100svh] w-full"
-      style={vh ? { height: `${vh}px` } : undefined}
-    >
-      <DrawerToggleTab
-        isOpen={isOpen}
-        onToggle={() => setIsOpen((v) => !v)}
-        className="fixed right-2 top-1/3 -translate-y-1/2"
-      />
-      <BoardPreview
-        isDrawerOpen={isOpen}
-        onToggleDrawer={() => setIsOpen((v) => !v)}
-        boardData={boardData}
-        size={size}
-        onReverseRow={handleReverseRow}
-        strip3Enabled={strip3Enabled}
-        onChangeRowStrip={handleChangeRowStrip}
-      />
-      <StripBuilder
-        boardData={boardData}
-        setBoardData={setBoardDataWithHistory}
-        strip3Enabled={strip3Enabled}
-        onToggleStrip3={toggleStrip3}
-      />
-      <Drawer
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onRandomize={handleRandomize}
-        size={size}
-        onSelectSize={handleSelectSize}
-      />
-    </main>
+    <ModalProvider>
+      <main
+        className="relative grid grid-rows-[50%_40%] h-[100svh] w-full"
+        style={vh ? { height: `${vh}px` } : undefined}
+      >
+        <DrawerToggleTab
+          isOpen={isOpen}
+          onToggle={() => setIsOpen((v) => !v)}
+          className="fixed right-2 top-1/3 -translate-y-1/2"
+        />
+        <BoardPreview
+          isDrawerOpen={isOpen}
+          onToggleDrawer={() => setIsOpen((v) => !v)}
+          boardData={boardData}
+          size={size}
+          onReverseRow={handleReverseRow}
+          strip3Enabled={strip3Enabled}
+          onChangeRowStrip={handleChangeRowStrip}
+        />
+        <StripBuilder
+          boardData={boardData}
+          setBoardData={setBoardDataWithHistory}
+          strip3Enabled={strip3Enabled}
+          onToggleStrip3={toggleStrip3}
+        />
+        <Drawer
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onRandomize={handleRandomize}
+          size={size}
+          onSelectSize={handleSelectSize}
+        />
+        {/* Modal root mounted at page level */}
+        <ModalRoot />
+      </main>
+    </ModalProvider>
   );
 }

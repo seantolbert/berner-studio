@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { WOODS } from "../components/woods";
+import { WOODS, woodByKey } from "../components/woods";
 import type { RowOrder, Size } from "../components/preview/useRowDnD";
+import type { BoardTemplate } from "../../templates";
 
 export function useBoardBuilder() {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,12 +68,12 @@ export function useBoardBuilder() {
   };
 
   const handleRandomize = () => {
-    const colors = WOODS.map((w) => w.color);
+    const woodKeys = WOODS.map((w) => w.key);
     const next = clone(boardData);
     next.strips = next.strips.map((row, ri) => {
       const active = ri !== 2 || strip3Enabled;
       if (!active) return row.slice();
-      return row.map(() => colors[Math.floor(Math.random() * colors.length)]);
+      return row.map(() => woodKeys[Math.floor(Math.random() * woodKeys.length)]);
     });
     const allowedStrips = strip3Enabled ? [1, 2, 3] : [1, 2];
     const rowCount = next.order?.length ?? (size === "small" ? 10 : size === "regular" ? 14 : 16);
@@ -82,6 +83,38 @@ export function useBoardBuilder() {
     }));
     console.log("Randomize applied. Board Data:", next);
     setBoardDataWithHistory(next);
+  };
+
+  const resetToBlank = (s: Size = "regular") => {
+    // Apply size
+    setSize(s);
+    // No third strip by default
+    setStrip3Enabled(false);
+    // Determine columns based on size
+    const cols = s === "large" ? 14 : 12;
+    const strips = Array.from({ length: 3 }, () => Array<string | null>(cols).fill(null));
+    // Default order: alternating 1,2 with appropriate count
+    const countPerStrip = s === "small" ? 5 : s === "regular" ? 7 : 8;
+    const order: RowOrder[] = Array.from({ length: countPerStrip * 2 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
+
+    setBoardData({ strips, order });
+    setHistory([]);
+    setFuture([]);
+    console.log("Reset to blank configuration.", { size: s, strips, order });
+  };
+
+  const loadTemplate = (tpl: BoardTemplate) => {
+    // Use wood keys directly; ensure 3 rows exist
+    const mappedStrips: (string | null)[][] = tpl.strips.map((row) => row.slice());
+    while (mappedStrips.length < 3) mappedStrips.push(Array<string | null>(mappedStrips[0]?.length || 12).fill(null));
+
+    setSize(tpl.size);
+    setStrip3Enabled(tpl.strip3Enabled);
+    setBoardData({ strips: mappedStrips, order: tpl.order.map((o) => ({ ...o })) });
+    // Reset history/future so undo doesn't jump back to blank
+    setHistory([]);
+    setFuture([]);
+    console.log("Template loaded.", { tpl, mappedStrips });
   };
 
   const applyCols = (cols: number) => {
@@ -161,6 +194,8 @@ export function useBoardBuilder() {
     handleReorder,
     handleReverseRow,
     handleChangeRowStrip,
+    loadTemplate,
+    resetToBlank,
     canUndo,
     canRedo,
     handleUndo,

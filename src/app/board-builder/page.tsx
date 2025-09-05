@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import BoardPreview from "./components/BoardPreview";
 import StripBuilder from "./components/StripBuilder";
 import Drawer from "./components/Drawer";
@@ -10,6 +10,8 @@ import { useBoardBuilder } from "./hooks/useBoardBuilder";
 import { ModalProvider, ModalRoot } from "./components/modal/ModalProvider";
 import { useRouter } from "next/navigation";
 import { LS_SELECTED_TEMPLATE_KEY } from "../templates";
+import { saveBoard } from "@/lib/supabase/usage";
+import { supabase } from "@/lib/supabase/client";
 
 export default function BoardBuilderPage() {
   const vh = useViewportHeight();
@@ -35,6 +37,40 @@ export default function BoardBuilderPage() {
   } = useBoardBuilder();
   const router = useRouter();
   const loadedRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+
+  const isBoardComplete = useMemo(() => {
+    const requiredRows = strip3Enabled ? [0, 1, 2] : [0, 1];
+    return requiredRows.every((r) => boardData.strips[r].every((c) => c !== null));
+  }, [boardData.strips, strip3Enabled]);
+
+  const handleSave = async () => {
+    if (!isBoardComplete || saving) return;
+    setSaving(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user) {
+        alert("Please sign in to save your board.");
+        return;
+      }
+      await saveBoard({
+        userId: user.id,
+        size,
+        strip3Enabled,
+        data: {
+          strips: boardData.strips,
+          order: boardData.order,
+        },
+      });
+      alert("Board saved!");
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || "Failed to save board");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleChangeRowOrder = (_rowIndex: number, _stripNo: number) => {};
 
@@ -110,6 +146,9 @@ export default function BoardBuilderPage() {
           onRandomize={handleRandomize}
           size={size}
           onSelectSize={handleSelectSize}
+          onSave={handleSave}
+          canSave={isBoardComplete}
+          saving={saving}
         />
         {/* Modal root mounted at page level */}
         <ModalRoot />

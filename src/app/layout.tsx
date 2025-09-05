@@ -34,8 +34,24 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <header className="sticky top-0 z-30 w-full border-b border-black/10 dark:border-white/10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="mx-auto max-w-5xl px-4 py-2 flex items-center justify-between">
+            <div className="text-sm opacity-70">boardsmith</div>
+            {/* Client component renders auth controls */}
+            {/* @ts-expect-error Async Server Component boundary */}
+            <ClientAuthSlot />
+          </div>
+        </header>
+        <main>{children}</main>
       </body>
     </html>
   );
+}
+
+// Separate client wrapper to keep layout a server component
+function ClientAuthSlot() {
+  // Dynamic import inside avoids marking layout as client
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const AuthButton = require("@/app/components/AuthButton").default as any;
+  return <AuthButton />;
 }

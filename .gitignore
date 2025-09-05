@@ -33,6 +33,13 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Supabase CLI generated files (local-only)
+supabase/.temp/
+supabase/.branches/
+supabase/docker/
+supabase/volumes/
+supabase/.env
+
 # vercel
 .vercel
 

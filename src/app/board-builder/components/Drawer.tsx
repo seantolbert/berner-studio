@@ -11,6 +11,9 @@ type Props = {
   onRandomize?: () => void;
   size: "small" | "regular" | "large";
   onSelectSize: (s: "small" | "regular" | "large") => void;
+  onSave?: () => void;
+  canSave?: boolean;
+  saving?: boolean;
 };
 
 export default function Drawer({
@@ -23,6 +26,9 @@ export default function Drawer({
   onRandomize,
   size,
   onSelectSize,
+  onSave,
+  canSave,
+  saving,
 }: Props) {
   return (
     <>
@@ -75,6 +81,9 @@ export default function Drawer({
               onRandomize={onRandomize}
               canUndo={!!canUndo}
               canRedo={!!canRedo}
+              onSave={onSave}
+              canSave={!!canSave}
+              saving={!!saving}
             />
           </div>
         </div>

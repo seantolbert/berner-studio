@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Supabase (CLI) Setup
+
+- Install CLI: `brew install supabase/tap/supabase` or see docs for your OS.
+- Login (stores token outside the repo): `supabase login`
+- Link to your project: `supabase link --project-ref <your-project-ref>`
+- Apply DB schema: `supabase db push` (uses files in `supabase/migrations/`)
+- Set env locally: copy `.env.local.example` to `.env.local` and fill `SUPABASE_URL` and `SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_*`).
+
+Notes
+- `.gitignore` excludes `.env*` and Supabase CLI temp folders, so secrets and local containers aren’t committed.
+- RLS policies require authenticated users. Sign in at least once before testing inserts to `boards`.

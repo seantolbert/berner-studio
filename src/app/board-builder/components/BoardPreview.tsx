@@ -12,6 +12,8 @@ type Props = {
   onReverseRow?: (rowIndex: number) => void;
   strip3Enabled?: boolean;
   onChangeRowStrip?: (rowIndex: number, stripNo: number) => void;
+  interactive?: boolean;
+  minimal?: boolean; // for extras page: no bg, no labels, no gaps
 };
 
 export default function BoardPreview({
@@ -22,9 +24,11 @@ export default function BoardPreview({
   onReverseRow,
   strip3Enabled = false,
   onChangeRowStrip,
+  interactive = true,
+  minimal = false,
 }: Props) {
   const cols = boardData.strips[0]?.length ?? 12;
-  const cellPx = 16; // fixed square size in pixels
+  const cellPx = 12; // fixed square size in pixels
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [deselectingRows, setDeselectingRows] = useState<Set<number>>(
     new Set()
@@ -38,6 +42,7 @@ export default function BoardPreview({
     }));
   }, [boardData.order, size]);
   const onRowClick = (index: number) => {
+    if (!interactive) return;
     setSelectedRow((prev) => {
       if (prev === index) {
         const next = new Set(deselectingRows);
@@ -61,12 +66,22 @@ export default function BoardPreview({
   };
 
   return (
-    <section className="row-span-1 flex items-center justify-center border-b border-black/10 dark:border-white/10">
-      <div className="relative w-full h-full rounded-lg bg-black/[.03] dark:bg-white/[.06]">
+    <section
+      className={`row-span-1 h-full w-full flex items-center justify-center ${
+        minimal ? "" : "border-b border-black/10 dark:border-white/10"
+      }`}
+    >
+      <div
+        className={`relative w-full h-full ${
+          minimal ? "" : "rounded-lg bg-black/[.03] dark:bg-white/[.06]"
+        }`}
+      >
         {/* Preview grid */}
         <div className="absolute inset-0 p-2 pt-6 pr-3 sm:p-4 sm:pt-12 sm:pr-6">
           <div
-            className={`h-full w-full overflow-hidden flex flex-col items-center justify-center gap-[2px]`}
+            className={`h-full w-full overflow-hidden flex flex-col items-center justify-center ${
+              minimal ? "gap-0" : "gap-[3px]"
+            }`}
           >
             {effectiveOrder.map((rowObj, i) => {
               const stripIndex = Math.max(
@@ -86,11 +101,9 @@ export default function BoardPreview({
                 e: React.TransitionEvent<HTMLButtonElement>
               ) => onRowTransitionEnd(idx, e);
               return (
-                <div
-                  key={i}
-                  className="relative w-full flex items-center justify-center"
-                >
+                <div key={i} className="relative w-full flex items-center justify-center">
                   {(() => {
+                    if (!interactive) return null;
                     const active = selectedRow === i;
                     const reflected = !!rowObj?.reflected;
                     const bgText = reflected
@@ -214,12 +227,15 @@ export default function BoardPreview({
                       cellPx={cellPx}
                       selected={selectedRow === i}
                       deselecting={deselectingRows.has(i)}
-                      onClick={() => handleClick()}
+                      compact={minimal}
+                      onClick={interactive ? () => handleClick() : undefined}
                       onTransitionEnd={handleTransitionEnd}
                     />
-                    <span className="pointer-events-none absolute left-full ml-1 top-1/2 -translate-y-1/2 z-20 text-sm sm:text-base font-semibold text-foreground/90">
-                      {rowObj?.stripNo}
-                    </span>
+                    {!minimal && (
+                      <span className="pointer-events-none absolute left-full ml-1 top-1/2 -translate-y-1/2 z-20 text-sm sm:text-base font-semibold text-foreground/90">
+                        {rowObj?.stripNo}
+                      </span>
+                    )}
                   </div>
                 </div>
               );

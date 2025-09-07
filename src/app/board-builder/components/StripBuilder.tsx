@@ -3,7 +3,6 @@
 import { useState } from "react";
 import AvailableWoods from "./AvailableWoods";
 import Strips from "./Strips";
-import { useRouter } from "next/navigation";
 import { useModal } from "./modal/ModalProvider";
 
 type Props = {
@@ -19,6 +18,7 @@ type Props = {
   strip3Enabled: boolean;
   onToggleStrip3: () => void;
   onConfirmComplete?: () => void;
+  pricing?: { total: number; cellCount: number };
 };
 
 export default function StripBuilder({
@@ -27,13 +27,15 @@ export default function StripBuilder({
   strip3Enabled,
   onToggleStrip3,
   onConfirmComplete,
+  pricing,
 }: Props) {
   const [selectedWoodKey, setSelectedWoodKey] = useState<string | null>(null);
-  const router = useRouter();
   const { open, close } = useModal();
   // Complete only when required strips are fully filled
   const requiredRows = strip3Enabled ? [0, 1, 2] : [0, 1];
-  const isAllRequiredStripsComplete = requiredRows.every((r) => boardData.strips[r].every((c) => c !== null));
+  const isAllRequiredStripsComplete = requiredRows.every((r) =>
+    boardData.strips[r].every((c) => c !== null)
+  );
 
   return (
     <section className="row-span-1 pt-2">
@@ -50,28 +52,23 @@ export default function StripBuilder({
           onToggleStrip3={onToggleStrip3}
         />
         <div className="grid grid-cols-3 gap-2">
-          {/* Back button (1/3 width) */}
-          <button
-            type="button"
-            aria-label="Back"
-            title="Back"
-            onClick={() => router.push("/")}
-            className="col-span-1 inline-flex items-center justify-center h-12 rounded-md border border-black/15 dark:border-white/15 bg-white/70 dark:bg-black/30 hover:bg-black/5 dark:hover:bg-white/10"
+          {/* Price indicator replaces back button */}
+          <div
+            className="col-span-1 inline-flex items-center justify-between h-12 rounded-md border border-black/15 dark:border-white/15 bg-white/70 dark:bg-black/30 px-3"
+            aria-live="polite"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-5 w-5"
-              aria-hidden="true"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
+            <span className="text-xs text-black/60 dark:text-white/60">
+              Total
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-semibold tabular-nums">
+                ${pricing ? pricing.total.toFixed(2) : "0.00"}
+              </span>
+              <span className="text-[10px] text-black/50 dark:text-white/50">
+                {pricing ? pricing.cellCount : 0} cells
+              </span>
+            </div>
+          </div>
 
           {/* Complete button (2/3 width) */}
           <button

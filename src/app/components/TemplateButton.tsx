@@ -70,10 +70,9 @@ export default function TemplateButton({
           ))}
         </div>
 
-        {/* Meta */}
+        {/* Meta (title removed by request) */}
         <div className="w-full text-center">
-          <div className="font-medium truncate">{template.name}</div>
-          <div className="text-xs opacity-70 mt-1">
+          <div className="text-xs opacity-70">
             {template.size} • {template.strip3Enabled ? "3 strips" : "2 strips"}
           </div>
         </div>

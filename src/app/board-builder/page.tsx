@@ -12,9 +12,11 @@ import { useRouter } from "next/navigation";
 import { LS_SELECTED_TEMPLATE_KEY } from "../templates";
 import { saveBoard } from "@/lib/supabase/usage";
 import { supabase } from "@/lib/supabase/client";
+import { calculateBoardPrice } from "./pricing";
 
 export default function BoardBuilderPage() {
   const vh = useViewportHeight();
+  const [headerH, setHeaderH] = useState<number>(48);
   const {
     isOpen,
     setIsOpen,
@@ -41,8 +43,18 @@ export default function BoardBuilderPage() {
 
   const isBoardComplete = useMemo(() => {
     const requiredRows = strip3Enabled ? [0, 1, 2] : [0, 1];
-    return requiredRows.every((r) => boardData.strips[r].every((c) => c !== null));
+    return requiredRows.every((r) =>
+      boardData.strips[r].every((c) => c !== null)
+    );
   }, [boardData.strips, strip3Enabled]);
+
+  const pricing = useMemo(() => {
+    return calculateBoardPrice({
+      size,
+      strips: boardData.strips,
+      strip3Enabled,
+    });
+  }, [size, boardData.strips, strip3Enabled]);
 
   const handleSave = async () => {
     if (!isBoardComplete || saving) return;
@@ -83,6 +95,18 @@ export default function BoardBuilderPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Measure header height to keep page non-scrollable
+  useEffect(() => {
+    const measure = () => {
+      const el = document.querySelector("header");
+      const h = el instanceof HTMLElement ? el.offsetHeight : 0;
+      setHeaderH(h);
+    };
+    measure();
+    window.addEventListener("resize", measure, { passive: true } as any);
+    return () => window.removeEventListener("resize", measure as any);
+  }, []);
+
   // Load template from localStorage or redirect back to selection
   useEffect(() => {
     if (loadedRef.current) return;
@@ -113,8 +137,8 @@ export default function BoardBuilderPage() {
   return (
     <ModalProvider>
       <main
-        className="relative grid grid-rows-[50%_40%] h-[100svh] w-full"
-        style={vh ? { height: `${vh}px` } : undefined}
+        className="relative grid grid-rows-[50%_40%] h-[100svh] w-full overflow-hidden pb-10"
+        style={vh ? { height: `${Math.max(0, vh - headerH)}px` } : undefined}
       >
         <DrawerToggleTab
           isOpen={isOpen}
@@ -135,6 +159,22 @@ export default function BoardBuilderPage() {
           setBoardData={setBoardDataWithHistory}
           strip3Enabled={strip3Enabled}
           onToggleStrip3={toggleStrip3}
+          pricing={{ total: pricing.total, cellCount: pricing.cellCount }}
+          onConfirmComplete={() => {
+            // Navigate to follow-up page after confirming completion
+            try {
+              const payload = {
+                size,
+                strip3Enabled,
+                boardData: {
+                  strips: boardData.strips,
+                  order: boardData.order,
+                },
+              };
+              localStorage.setItem("bs_current_config", JSON.stringify(payload));
+            } catch {}
+            router.push("/board-builder/extras");
+          }}
         />
         <Drawer
           isOpen={isOpen}

@@ -1,10 +1,17 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const MiniCartDrawer = require("@/app/components/MiniCartDrawer").default as any;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const useLocalCart = require("@/app/hooks/useLocalCart").default as any;
 
 export default function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const { items } = useLocalCart();
+  const [cartOpen, setCartOpen] = useState(false);
   const isBuilder = pathname?.startsWith("/board-builder");
 
   // Non-sticky header on builder pages to keep header + content as one unit
@@ -36,16 +43,28 @@ export default function AppHeader() {
           <MobileNav />
           <button
             type="button"
-            onClick={() => router.push("/cart")}
-            className="hidden md:inline-flex h-8 px-3 rounded-md border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 text-sm"
+            onClick={() => setCartOpen(true)}
+            className="hidden md:inline-flex h-8 px-3 rounded-md border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 text-sm items-center gap-2"
           >
-            Cart
+            <span>Cart</span>
+            <CartCountBadge items={items} />
           </button>
           <div className="hidden md:inline-flex">
             <AuthButton />
           </div>
         </div>
+        <MiniCartDrawer open={cartOpen} onOpenChange={setCartOpen} />
       </div>
     </header>
+  );
+}
+
+function CartCountBadge({ items }: { items: Array<{ quantity: number }> | undefined }) {
+  const count = useMemo(() => (items || []).reduce((s, it) => s + Math.max(0, Number(it.quantity) || 0), 0), [items]);
+  if (!count) return null;
+  return (
+    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full text-[11px] border border-black/15 dark:border-white/15 bg-black/5 dark:bg-white/10">
+      {count}
+    </span>
   );
 }

@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import ExtrasPreview from "../components/ExtrasPreview";
-import PreviewRow from "../components/preview/PreviewRow";
-import { styleForToken } from "../components/woods";
+// Preview moved into PreviewPane for clarity
+import PreviewPane from "../components/PreviewPane";
 import { calculateBoardPrice, PRICING_SSO } from "../pricing";
-import { ModalProvider, ModalRoot, useModal } from "../components/modal/ModalProvider";
+import { estimateBoardETA } from "@/lib/leadtime";
+import CostSummary from "../components/CostSummary";
+import { ModalProvider, ModalRoot } from "../components/modal/ModalProvider";
+import AddToCartButton from "../components/AddToCartButton";
+import ExtrasFormControls from "../components/ExtrasFormControls";
 
 type Size = "small" | "regular" | "large";
 
 export default function ExtrasPage() {
-  const router = useRouter();
   const [loaded, setLoaded] = useState(false);
   const [size, setSize] = useState<Size>("regular");
   const [strip3Enabled, setStrip3Enabled] = useState(false);
@@ -45,19 +46,7 @@ export default function ExtrasPage() {
     }
   }, []);
 
-  const preview = useMemo(
-    () => (
-      <ExtrasPreview
-        boardData={boardData}
-        size={size}
-        borderRadius={edgeProfile === "chamfer" ? 0 : borderRadius}
-        grooveEnabled={grooveEnabled}
-        edgeProfile={edgeProfile}
-        chamferSize={chamferSize}
-      />
-    ),
-    [boardData, size, borderRadius, grooveEnabled, edgeProfile, chamferSize]
-  );
+  // PreviewPane wraps ExtrasPreview with effective radius logic
 
   // Derive top row colors from the same SSOT as the preview
   const topRowColors: (string | null)[] = useMemo(() => {
@@ -92,19 +81,7 @@ export default function ExtrasPage() {
     return out;
   }, [boardData, size]);
 
-  const EDGE_OPTIONS = [
-    { key: "edged", label: "Edged", kind: "edged" as const },
-    { key: "rounded4", label: "Rounded", kind: "rounded" as const, radius: 4 },
-    { key: "rounded8", label: "Heavy Rounded", kind: "rounded" as const, radius: 8 },
-    { key: "double_chamfer", label: "Double Chamfer", kind: "chamfer" as const, chamfer: 8 },
-    // Diamond: lighter TL chamfer, steeper BL chamfer
-    { key: "diamond", label: "Diamond", kind: "chamfer" as const, chamferTLX: 3, chamferTLY: 2, chamferBLX: 6, chamferBLY: 12 },
-    // Flat Top: no top-left chamfer, heavier bottom-left chamfer (same as Diamond's BL)
-    { key: "flat_top", label: "Flat Top", kind: "chamfer" as const, chamferTLX: 0, chamferTLY: 0, chamferBLX: 6, chamferBLY: 12 },
-    // placeholders for 2 more to keep 2x3 grid if needed later
-    // { key: "placeholder1", label: "", kind: "edged" as const },
-    // { key: "placeholder2", label: "", kind: "edged" as const },
-  ];
+  // Edge options moved into ExtrasFormControls
 
   // Pricing: carry cost from previous page and add extras
   const basePricing = useMemo(() => {
@@ -119,8 +96,14 @@ export default function ExtrasPage() {
 
   const grandTotal = basePricing.total + extrasTotal;
 
-  const PREVIEW_CELL_PX = 20;
-  const VISIBLE_CELLS = 4;
+  const eta = useMemo(() => estimateBoardETA({
+    size,
+    strip3Enabled,
+    boardData,
+    extras: { grooveEnabled, edgeProfile, chamferSize },
+  }), [size, strip3Enabled, boardData, grooveEnabled, edgeProfile, chamferSize]);
+
+  // Preview constants are owned by PreviewPane/ExtrasFormControls now
 
   return (
     <ModalProvider>
@@ -128,19 +111,28 @@ export default function ExtrasPage() {
       {/* Top: left 50% preview, right 50% cost calculator */}
       <div className="w-full p-4">
         <div className="grid grid-cols-2 gap-4 items-start">
-          <div className="w-full">{preview}</div>
+          <div className="w-full">
+            <PreviewPane
+              size={size}
+              boardData={boardData}
+              edgeProfile={edgeProfile}
+              borderRadius={borderRadius}
+              chamferSize={chamferSize}
+              grooveEnabled={grooveEnabled}
+            />
+          </div>
           <div className="w-full">
             <div className="rounded-lg border border-black/10 dark:border-white/10 p-4">
               <div className="text-lg font-semibold mb-3">Cost</div>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span>Base</span><span>${basePricing.base.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Cells ({basePricing.cellCount} × ${PRICING_SSO.cellPrice.toFixed(2)})</span><span>${basePricing.variable.toFixed(2)}</span></div>
-                {grooveEnabled && (
-                  <div className="flex justify-between"><span>Juice groove</span><span>+${PRICING_SSO.extras.juiceGroove.toFixed(2)}</span></div>
-                )}
-                <div className="border-t border-black/10 dark:border-white/10 my-2" />
-                <div className="flex justify-between text-base font-medium"><span>Total</span><span>${grandTotal.toFixed(2)}</span></div>
-                <div className="pt-3 flex justify-end">
+              <CostSummary
+                base={basePricing.base}
+                variable={basePricing.variable}
+                cellCount={basePricing.cellCount}
+                juiceGrooveEnabled={grooveEnabled}
+                total={grandTotal}
+                etaLabel={eta.label}
+              />
+              <div className="pt-3 flex justify-end">
                   <AddToCartButton
                     item={{
                       name: "Custom cutting board",
@@ -171,137 +163,20 @@ export default function ExtrasPage() {
         <p className="text-sm opacity-70 mb-4">
           Choose add-ons, engraving, and finishing options.
         </p>
-        <div className="rounded-lg border border-black/10 dark:border-white/10 p-4 grid gap-4">
-          {/* Move Juice groove toggle to top */}
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium">Juice groove</div>
-              <div className="text-xs opacity-70">Previewed as a black inset line</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setGrooveEnabled((v) => !v)}
-              className={`h-9 px-3 rounded-md border ${
-                grooveEnabled
-                  ? "border-emerald-500 text-emerald-700 dark:text-emerald-400"
-                  : "border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-              }`}
-            >
-              {grooveEnabled ? "Enabled" : "Disabled"}
-            </button>
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2">Corner</div>
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { key: "edged", label: "Edged", onSelect: () => { setEdgeProfile("square"); setBorderRadius(0); } },
-                { key: "r4", label: "Rounded 4px", onSelect: () => { setEdgeProfile("roundover"); setBorderRadius(4); } },
-                { key: "r8", label: "Rounded 8px", onSelect: () => { setEdgeProfile("roundover"); setBorderRadius(8); } },
-                { key: "ch4", label: "Chamfer", onSelect: () => { setEdgeProfile("chamfer"); setBorderRadius(0); setChamferSize(4); } },
-              ].map((opt) => {
-                const selected =
-                  (opt.key === "edged" && edgeProfile === "square" && borderRadius === 0) ||
-                  (opt.key === "r4" && edgeProfile === "roundover" && borderRadius === 4) ||
-                  (opt.key === "r8" && edgeProfile === "roundover" && borderRadius === 8) ||
-                  (opt.key === "ch4" && edgeProfile === "chamfer");
-                const cellPx = 22;
-                const cornerStyle: React.CSSProperties = {
-                  width: `${cellPx * 2}px`,
-                  height: `${cellPx * 2}px`,
-                  overflow: "hidden",
-                  borderTopLeftRadius: opt.key.startsWith("r") ? (opt.key === "r4" ? 4 : 8) : 0,
-                  clipPath:
-                    opt.key === "ch4"
-                      ? `polygon(4px 0, 100% 0, 100% 100%, 0 100%, 0 4px)`
-                      : undefined,
-                };
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={opt.onSelect}
-                    className={`rounded-lg border p-2 flex flex-col items-center gap-2 ${
-                      selected
-                        ? "border-emerald-500 ring-2 ring-emerald-200"
-                        : "border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-                    }`}
-                  >
-                    <div style={cornerStyle} className="grid grid-cols-2 grid-rows-2">
-                      {cornerColors2x2.flat().map((tok, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            width: `${cellPx}px`,
-                            height: `${cellPx}px`,
-                            ...(styleForToken(tok, cellPx) || { backgroundColor: "transparent" }),
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div className="text-xs opacity-80 text-center">{opt.label}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <div className="text-sm font-medium mb-2">Edge profile</div>
-            <div className="grid grid-cols-3 gap-3">
-              {EDGE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  aria-pressed={edgeOption === opt.key}
-                  onClick={() => setEdgeOption(opt.key)}
-                  className={`relative h-28 rounded-lg border transition-colors ${
-                    edgeOption === opt.key
-                      ? "border-emerald-500 ring-2 ring-emerald-200"
-                      : "border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-                  } overflow-hidden flex flex-col items-center justify-center gap-2`}
-                >
-                  {/* Zoomed strip centered; only first 4 cells visible */}
-                  <div className="pointer-events-none" style={{ width: `${VISIBLE_CELLS * PREVIEW_CELL_PX}px`, overflow: "hidden" }}>
-                    <div
-                      style={{
-                        borderTopLeftRadius: opt.kind === "rounded" ? (opt.radius ?? 0) : 0,
-                        borderBottomLeftRadius: opt.kind === "rounded" ? (opt.radius ?? 0) : 0,
-                        clipPath:
-                          opt.kind === "chamfer"
-                            ? (() => {
-                                const tX = (opt as any).chamferTLX ?? (opt as any).chamferTL ?? (opt as any).chamfer ?? 8;
-                                const tY = (opt as any).chamferTLY ?? (opt as any).chamferTL ?? (opt as any).chamfer ?? 8;
-                                const bX = (opt as any).chamferBLX ?? (opt as any).chamferBL ?? (opt as any).chamfer ?? 8;
-                                const bY = (opt as any).chamferBLY ?? (opt as any).chamferBL ?? (opt as any).chamfer ?? 8;
-                                return `polygon(${tX}px 0, 100% 0, 100% 100%, ${bX}px 100%, 0 calc(100% - ${bY}px), 0 ${tY}px)`;
-                              })()
-                            : undefined,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <PreviewRow
-                        index={0}
-                        stripNo={1}
-                        colors={topRowColors}
-                        colCount={topRowColors.length || 12}
-                        cellPx={PREVIEW_CELL_PX}
-                        selected={false}
-                        deselecting={false}
-                        compact
-                        onClick={undefined}
-                      />
-                    </div>
-                  </div>
-                  {/* Label underneath */}
-                  <div className="text-xs opacity-80 text-center px-2">{opt.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          
-        </div>
+        <ExtrasFormControls
+          grooveEnabled={grooveEnabled}
+          setGrooveEnabled={setGrooveEnabled}
+          edgeProfile={edgeProfile}
+          setEdgeProfile={setEdgeProfile}
+          borderRadius={borderRadius}
+          setBorderRadius={setBorderRadius}
+          chamferSize={chamferSize}
+          setChamferSize={setChamferSize}
+          edgeOption={edgeOption}
+          setEdgeOption={setEdgeOption}
+          topRowColors={topRowColors}
+          cornerColors2x2={cornerColors2x2}
+        />
 
         {/* Persist current extras selections for later flows */}
         {(() => {
@@ -318,69 +193,4 @@ export default function ExtrasPage() {
   );
 }
 
-type CartSnapshot = {
-  name: string;
-  unitPriceCents: number;
-  breakdown: { baseCents: number; variableCents: number; extrasCents: number };
-  config: {
-    size: Size;
-    strip3Enabled: boolean;
-    boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
-    extras: { edgeProfile: "square" | "roundover" | "chamfer"; borderRadius: number; chamferSize: number; grooveEnabled: boolean };
-  };
-};
-
-function AddToCartButton({ item }: { item: CartSnapshot }) {
-  const { open, close } = useModal();
-  const router = useRouter();
-
-  const handleAdd = () => {
-    try {
-      const raw = localStorage.getItem("bs_cart");
-      const arr = raw ? (JSON.parse(raw) as any[]) : [];
-      const id = `cart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const line = { id, name: item.name, unitPrice: item.unitPriceCents, quantity: 1, breakdown: item.breakdown, config: item.config };
-      const next = Array.isArray(arr) ? [...arr, line] : [line];
-      localStorage.setItem("bs_cart", JSON.stringify(next));
-    } catch {}
-    open(
-      <div className="space-y-3">
-        <div className="text-base font-medium">Added to cart</div>
-        <div className="text-sm opacity-70">Your custom board has been added.</div>
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              router.push("/");
-            }}
-            className="inline-flex h-9 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-          >
-            Continue shopping
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              router.push("/cart");
-            }}
-            className="inline-flex h-9 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            Go to cart
-          </button>
-        </div>
-      </div>,
-      { title: "", size: "sm", dismissible: true }
-    );
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleAdd}
-      className="inline-flex h-10 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
-    >
-      Add to Cart
-    </button>
-  );
-}
+// AddToCartButton extracted to ../components/AddToCartButton

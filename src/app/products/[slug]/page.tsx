@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getProductBySlug } from "../data";
+import { estimateProductETA } from "@/lib/leadtime";
+import { formatCurrencyCents } from "@/lib/money";
+import { DEFAULT_CURRENCY } from "@/lib/env";
 
 function formatUsd(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+  return formatCurrencyCents(cents);
 }
 
 export default function ProductPage() {
@@ -39,6 +42,7 @@ export default function ProductPage() {
 
   return (
     <main className="min-h-screen w-full p-6">
+      {product ? <ProductJsonLd product={product} /> : null}
       <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-2 items-start">
         <div className="rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
           <div className="w-full aspect-[4/3] bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 flex items-center justify-center text-sm opacity-70">
@@ -50,6 +54,7 @@ export default function ProductPage() {
           <div>
             <h1 className="text-2xl font-semibold">{product.name}</h1>
             <div className="text-lg font-medium mt-1">{formatUsd(product.priceCents)}</div>
+            <div className="text-xs opacity-70 mt-1">{estimateProductETA().label}</div>
           </div>
           <p className="text-sm opacity-80">{product.description}</p>
 
@@ -78,3 +83,26 @@ export default function ProductPage() {
   );
 }
 
+function ProductJsonLd({ product }: { product: { slug: string; name: string; description: string; priceCents: number; image?: string } }) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const base = (siteUrl || "").replace(/\/$/, "");
+  const url = base ? `${base}/products/${product.slug}` : `/products/${product.slug}`;
+  const image = product.image ? (product.image.startsWith("http") ? product.image : `${base}${product.image}`) : (base ? `${base}/og.svg` : "/og.svg");
+  const json = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: [image],
+    brand: { "@type": "Brand", name: "Berner Studio" },
+    url,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: DEFAULT_CURRENCY.toUpperCase(),
+      price: (product.priceCents / 100).toFixed(2),
+      availability: "http://schema.org/InStock",
+      url,
+    },
+  };
+  return <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ExtrasPreview from "../board-builder/components/ExtrasPreview";
+import { formatCurrencyCents } from "@/lib/money";
 
 type Size = "small" | "regular" | "large";
 type CartItem = {
@@ -20,7 +21,7 @@ type CartItem = {
 };
 
 function formatUsd(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+  return formatCurrencyCents(cents);
 }
 
 export default function CartPage() {
@@ -44,6 +45,8 @@ export default function CartPage() {
     if (!loaded) return;
     try {
       localStorage.setItem("bs_cart", JSON.stringify(items));
+      // Notify other components (e.g., mini-cart) of updates
+      try { window.dispatchEvent(new CustomEvent("cart:update")); } catch {}
     } catch {}
   }, [items, loaded]);
 
@@ -143,6 +146,7 @@ export default function CartPage() {
               <div className="text-xs opacity-70 mb-3">Taxes and shipping calculated at checkout.</div>
               <button
                 type="button"
+                onClick={() => router.push("/checkout")}
                 className="w-full inline-flex h-10 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Checkout

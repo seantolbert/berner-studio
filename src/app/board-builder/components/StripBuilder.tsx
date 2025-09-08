@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatCurrency } from "@/lib/money";
 import AvailableWoods from "./AvailableWoods";
 import Strips from "./Strips";
 import { useModal } from "./modal/ModalProvider";
@@ -62,7 +63,7 @@ export default function StripBuilder({
             </span>
             <div className="flex items-baseline gap-2">
               <span className="text-base font-semibold tabular-nums">
-                ${pricing ? pricing.total.toFixed(2) : "0.00"}
+                {formatCurrency(pricing ? pricing.total : 0)}
               </span>
               <span className="text-[10px] text-black/50 dark:text-white/50">
                 {pricing ? pricing.cellCount : 0} cells

@@ -37,7 +37,7 @@ export default function EditProductPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [price, setPrice] = useState<string>(""); // dollars
-  const [category, setCategory] = useState(CATEGORIES[0].value);
+  const [category, setCategory] = useState<string>(CATEGORIES[0]?.value ?? "boards");
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
   const [status, setStatus] = useState("draft");
@@ -409,7 +409,7 @@ export default function EditProductPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs opacity-70">Filter:</span>
                       <input value={imageColorFilter} onChange={(e)=>setImageColorFilter(e.target.value)} onBlur={()=>refreshImages()} placeholder="color" className="h-8 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm w-28" />
-                      <button type="button" className="h-8 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs" onClick={()=>{ setImageColorFilter(''); refreshImages(''); }}>Clear</button>
+                      <button type="button" className="h-8 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs" onClick={()=>{ setImageColorFilter(''); refreshImages(); }}>Clear</button>
                     </div>
                   </div>
                   {imgLoading ? (

@@ -34,15 +34,7 @@ export async function saveBoard({
   return insertData;
 }
 
-export async function listBoards(userId: string) {
-  const { data, error } = await supabase
-    .from("boards")
-    .select("id, name, size, strip3_enabled, created_at, updated_at")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
-  if (error) throw error;
-  return data;
-}
+// Removed unused listBoards; add back if user-specific listing is needed.
 
 export async function listTemplates(): Promise<BoardTemplate[]> {
   const { data, error } = await supabase
@@ -50,13 +42,15 @@ export async function listTemplates(): Promise<BoardTemplate[]> {
     .select('id, name, size, strip3_enabled, strips, "order"')
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((t) => ({
-    id: t.id as string,
-    name: t.name as string,
-    size: t.size as any,
-    strip3Enabled: (t as any).strip3_enabled as boolean,
-    strips: (t as any).strips as string[][],
-    order: (t as any).order as { stripNo: number; reflected: boolean }[],
+  const normalizeSize = (s: string): "small" | "regular" | "large" =>
+    s === "small" || s === "regular" || s === "large" ? s : "regular";
+  return (data ?? []).map((t: Record<string, unknown>) => ({
+    id: String(t.id ?? ""),
+    name: String(t.name ?? "Untitled"),
+    size: normalizeSize(String(t.size ?? "regular")),
+    strip3Enabled: Boolean((t as any).strip3_enabled),
+    strips: (Array.isArray((t as any).strips) ? (t as any).strips : []) as string[][],
+    order: (Array.isArray((t as any).order) ? (t as any).order : []) as { stripNo: number; reflected: boolean }[],
   }));
 }
 
@@ -70,12 +64,14 @@ export async function listMyBoardTemplates(): Promise<BoardTemplate[]> {
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((b: any) => ({
-    id: b.id as string,
+  const normalizeSize = (s: string): "small" | "regular" | "large" =>
+    s === "small" || s === "regular" || s === "large" ? s : "regular";
+  return (data ?? []).map((b: Record<string, unknown>) => ({
+    id: String(b.id ?? ""),
     name: (b.name as string) || "Untitled",
-    size: b.size as any,
-    strip3Enabled: (b.strip3_enabled as boolean) ?? false,
-    strips: (b.data?.strips as string[][]) ?? [],
-    order: (b.data?.order as { stripNo: number; reflected: boolean }[]) ?? [],
+    size: normalizeSize(String(b.size ?? "regular")),
+    strip3Enabled: Boolean((b as any).strip3_enabled),
+    strips: (((b as any).data?.strips as string[][]) ?? []),
+    order: (((b as any).data?.order as { stripNo: number; reflected: boolean }[]) ?? []),
   }));
 }

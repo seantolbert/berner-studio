@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
@@ -31,14 +32,26 @@ export async function POST(req: NextRequest) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const body = (await req.json().catch(() => ({}))) as any;
-  const name = String(body.name || "").slice(0, 200);
-  const slug = slugify(body.slug || name);
-  const price_cents = Math.max(0, Number(body.price_cents || 0)) | 0;
-  const category = body.category as string;
-  const short_desc = body.short_desc ? String(body.short_desc) : null;
-  const long_desc = body.long_desc ? String(body.long_desc) : null;
-  const status = body.status === "published" ? "published" : body.status === "archived" ? "archived" : "draft";
+  const Body = z.object({
+    name: z.string().min(1).max(200),
+    slug: z.string().optional(),
+    price_cents: z.number().int().nonnegative(),
+    category: z.string().min(1),
+    short_desc: z.string().nullable().optional(),
+    long_desc: z.string().nullable().optional(),
+    status: z.enum(["draft", "published", "archived"]).optional(),
+  });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+  const b = parsed.data;
+  const name = b.name;
+  const slug = slugify(b.slug || name);
+  const price_cents = b.price_cents;
+  const category = b.category;
+  const short_desc = b.short_desc ?? null;
+  const long_desc = b.long_desc ?? null;
+  const status = b.status ?? "draft";
 
   if (!name || !slug || !category) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 
@@ -53,4 +66,3 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ id: data?.id, slug: data?.slug });
 }
-

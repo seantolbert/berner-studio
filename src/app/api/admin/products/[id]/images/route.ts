@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { id } = params;
+  const { id } = await ctx.params;
   const { searchParams } = new URL(req.url);
   const color = (searchParams.get('color') || '').trim();
   let query = adminSupabase
@@ -25,22 +26,32 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ items: data || [] });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { id } = params;
-  const body = (await req.json().catch(() => ({}))) as any;
-  const url = String(body.url || "");
-  const alt = body.alt ? String(body.alt) : null;
-  const is_primary = Boolean(body.is_primary);
-  const color = body.color ? String(body.color) : null;
+  const { id } = await ctx.params;
+  const Body = z.object({
+    url: z.string().url(),
+    alt: z.string().nullable().optional(),
+    is_primary: z.boolean().optional(),
+    position: z.number().int().nonnegative().optional(),
+    color: z.string().nullable().optional(),
+  });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+  const b = parsed.data;
+  const url = b.url;
+  const alt = b.alt ?? null;
+  const is_primary = b.is_primary ?? false;
+  const color = b.color ?? null;
   if (!url) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
   // Insert image
   const { data: inserted, error } = await adminSupabase
     .from("product_images")
-    .insert({ product_id: id, url, alt, is_primary, position: Number(body.position || 0) | 0, color })
+    .insert({ product_id: id, url, alt, is_primary, position: b.position ?? 0, color })
     .select("id, url, alt, is_primary, position, color")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

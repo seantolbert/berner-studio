@@ -7,18 +7,16 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "knip": "knip --strict",
+    "ts-prune": "ts-prune",
+    "depcheck": "depcheck",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.15",
-    "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-select": "^2.2.6",
     "@stripe/react-stripe-js": "^2.8.0",
     "@stripe/stripe-js": "^4.10.0",
     "@supabase/supabase-js": "^2.57.0",
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/typography": "^0.5.16",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -27,13 +25,18 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@next/bundle-analyzer": "^15.5.2",
+    "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "depcheck": "^1.4.7",
     "eslint": "^9",
-    "eslint-config-next": "15.5.2",
-    "tailwindcss": "^4",
+    "eslint-config-next": "^15.5.2",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "knip": "^5.63.1",
+    "tailwindcss": "^4.1.13",
+    "ts-prune": "^0.10.3",
     "typescript": "^5"
   }
 }

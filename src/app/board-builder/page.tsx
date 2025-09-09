@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import BoardPreview from "./components/BoardPreview";
-import StripBuilder from "./components/StripBuilder";
-import Drawer from "./components/Drawer";
-import DrawerToggleTab from "./components/DrawerToggleTab";
-import { useViewportHeight } from "./hooks/useViewportHeight";
-import { useBoardBuilder } from "./hooks/useBoardBuilder";
-import { ModalProvider, ModalRoot } from "./components/modal/ModalProvider";
+import BoardPreview from "@features/board-builder/ui/BoardPreview";
+import StripBuilder from "@features/board-builder/ui/StripBuilder";
+import Drawer from "@features/board-builder/ui/Drawer";
+import DrawerToggleTab from "@features/board-builder/ui/DrawerToggleTab";
+import { useViewportHeight } from "@features/board-builder/hooks/useViewportHeight";
+import { useBoardBuilder } from "@features/board-builder/hooks/useBoardBuilder";
+import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/ModalProvider";
 import { useRouter } from "next/navigation";
 import { LS_SELECTED_TEMPLATE_KEY } from "../templates";
 import { saveBoard } from "@/lib/supabase/usage";
 import { supabase } from "@/lib/supabase/client";
-import { calculateBoardPrice } from "./pricing";
+import { calculateBoardPrice } from "@features/board-builder/lib/pricing";
 
 export default function BoardBuilderPage() {
   const vh = useViewportHeight();

@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef } from "react";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const TopDrawer = require("@/app/components/TopDrawer").default as any;
-const AuthButton = require("@/app/components/AuthButton").default as any;
+import TopDrawer from "@/app/components/TopDrawer";
+import AuthButton from "@/app/components/AuthButton";
 import { mainNav } from "@/app/nav/config";
 
 export default function AppHeader() {

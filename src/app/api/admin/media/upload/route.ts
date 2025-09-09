@@ -10,7 +10,7 @@ function sanitizeFilename(name: string) {
 
 async function ensureMediaBucket() {
   try {
-    // @ts-ignore: storage API provides getBucket/listBuckets in supabase-js v2
+    // @ts-expect-error storage API provides getBucket in supabase-js v2 (types may lag)
     const { data: bucket } = await adminSupabase!.storage.getBucket("media");
     if (!bucket) {
       await adminSupabase!.storage.createBucket("media", { public: true });
@@ -18,10 +18,11 @@ async function ensureMediaBucket() {
   } catch {
     // Fallback: try list + create if needed
     try {
-      const { data: buckets } = await (adminSupabase as any).storage.listBuckets?.();
-      const exists = Array.isArray(buckets) && buckets.some((b: any) => b.name === "media");
+      const resp = (adminSupabase as unknown as { storage: { listBuckets?: () => Promise<{ data?: Array<{ name: string }>; error?: unknown }> } }).storage;
+      const out = await resp.listBuckets?.();
+      const exists = Array.isArray(out?.data) && out!.data!.some((b) => b.name === "media");
       if (!exists) {
-        await (adminSupabase as any).storage.createBucket("media", { public: true });
+        await (adminSupabase as unknown as { storage: { createBucket: (n: string, o: { public: boolean }) => Promise<unknown> } }).storage.createBucket("media", { public: true });
       }
     } catch {
       // ignore; upload will surface error if bucket is missing
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   const safe = sanitizeFilename(file.name || "upload");
   const path = `products/${slug}/${now}-${safe}`;
   const arrayBuffer = await file.arrayBuffer();
-  const { data, error } = await adminSupabase.storage.from("media").upload(path, Buffer.from(arrayBuffer), {
+  const { data: _data, error } = await adminSupabase.storage.from("media").upload(path, Buffer.from(arrayBuffer), {
     contentType: file.type || "application/octet-stream",
     upsert: false,
   });

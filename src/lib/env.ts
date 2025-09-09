@@ -50,17 +50,11 @@ export const SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 export const DEFAULT_CURRENCY = (env.NEXT_PUBLIC_CURRENCY ?? "usd").toLowerCase();
 
 // Lightweight check helpers
-export function hasStripeClientKey() {
-  return NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.length > 0;
-}
 export function hasStripeServerKeys() {
   return STRIPE_SECRET_KEY.length > 0;
 }
 export function hasStripeWebhookSecret() {
   return STRIPE_WEBHOOK_SECRET.length > 0;
-}
-export function hasSupabaseServiceRole() {
-  return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 }
 export function stripeKeyMode(): "live" | "test" | "unknown" {
   const key = STRIPE_SECRET_KEY;

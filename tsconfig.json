@@ -24,8 +24,12 @@
         "name": "next"
       }
     ],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@features/*": ["./src/features/*"],
+      "@server/*": ["./src/server/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

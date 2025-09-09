@@ -1,6 +1,6 @@
 "use client";
 
-import { woodByKey, styleForToken } from "./woods";
+import { styleForToken } from "./woods";
 import { useModal } from "./modal/ModalProvider";
 
 type Props = {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
@@ -20,14 +21,15 @@ export async function PATCH(req: NextRequest) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const body = (await req.json().catch(() => ({}))) as any;
-  const payload: any = {
-    id: true,
-    title: body.title ?? null,
-    body_md: body.body_md ?? null,
-  };
+  const Body = z.object({ title: z.string().nullable().optional(), body_md: z.string().nullable().optional() });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+  }
+  const b = parsed.data;
+  const payload = { id: true as const, title: b.title ?? null, body_md: b.body_md ?? null };
   const { error } = await adminSupabase.from("about_page").upsert(payload, { onConflict: "id" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-

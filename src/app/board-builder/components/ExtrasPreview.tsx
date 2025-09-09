@@ -71,8 +71,8 @@ export default function ExtrasPreview({
         <div className="absolute inset-0 flex flex-col gap-0 items-start justify-start">
           {effectiveOrder.map((rowObj, i) => {
             const stripIndex = Math.max(0, Math.min(2, (rowObj?.stripNo ?? 1) - 1));
-            const rowColors = boardData.strips[stripIndex] ?? [];
-            const displayColors = rowObj?.reflected ? rowColors.slice().reverse() : rowColors;
+            const rowColors: (string | null)[] = boardData.strips[stripIndex] ?? [];
+            const displayColors: (string | null)[] = rowObj?.reflected ? rowColors.slice().reverse() : rowColors;
             const colCount = rowColors.length || cols;
             return (
               <div key={i} className="relative w-full flex items-start justify-start">
@@ -80,7 +80,7 @@ export default function ExtrasPreview({
                   <PreviewRow
                     index={i}
                     stripNo={rowObj?.stripNo as number}
-                    colors={displayColors as any}
+                    colors={displayColors}
                     reflected={!!rowObj?.reflected}
                     colCount={colCount}
                     cellPx={cellPx}

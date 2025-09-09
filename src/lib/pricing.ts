@@ -40,20 +40,20 @@ const CURRENCY = DEFAULT_CURRENCY;
 const FREE_SHIPPING_THRESHOLD_CENTS = 75_00; // $75.00
 const FLAT_SHIPPING_CENTS = 9_95; // $9.95 below threshold
 
-export function clampToCents(n: number): number {
+function clampToCents(n: number): number {
   if (!Number.isFinite(n)) return 0;
   // Ensure integer cents and non-negative
   const rounded = Math.round(n);
   return rounded < 0 ? 0 : rounded;
 }
 
-export function computeSubtotal(items: CartItem[]): number {
+function computeSubtotal(items: CartItem[]): number {
   return clampToCents(
     items.reduce((sum, it) => sum + clampToCents(it.unitPrice) * Math.max(1, clampToCents(it.quantity)), 0)
   );
 }
 
-export function computeShipping(subtotal: number): number {
+function computeShipping(subtotal: number): number {
   if (subtotal >= FREE_SHIPPING_THRESHOLD_CENTS) return 0;
   return FLAT_SHIPPING_CENTS;
 }
@@ -65,7 +65,7 @@ export type TaxConfig =
   | { provider: "external"; rate: number }; // flat fallback rate e.g., 0.0825 for 8.25%
 
 // Default: no tax computation in-app. Replace with Stripe Tax or external provider.
-export function computeTax(
+function computeTax(
   _input: PricingInput,
   subtotal: number,
   _shipping: number,
@@ -93,13 +93,15 @@ export function coerceItems(value: unknown): CartItem[] {
   return value
     .map((v) => {
       if (!v || typeof v !== "object") return null;
-      const it = v as any;
+      const it = v as Record<string, unknown>;
       const unitPrice = clampToCents(Number(it.unitPrice));
-      const quantity = clampToCents(Number(it.quantity || 1));
-      if (!it.id || typeof it.id !== "string") return null;
+      const quantity = clampToCents(Number((it.quantity as number) ?? 1));
+      const id = typeof it.id === "string" ? it.id : undefined;
+      const name = typeof it.name === "string" ? it.name : "Item";
+      if (!id) return null;
       return {
-        id: it.id as string,
-        name: typeof it.name === "string" ? it.name : "Item",
+        id,
+        name,
         unitPrice,
         quantity: Math.max(1, quantity),
       } as CartItem;

@@ -23,7 +23,7 @@ export default function NewProductPage() {
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [price, setPrice] = useState<string>(""); // dollars
-  const [category, setCategory] = useState(CATEGORIES[0].value);
+  const [category, setCategory] = useState<string>(CATEGORIES[0]?.value ?? "boards");
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
   const [status, setStatus] = useState("draft");
@@ -49,7 +49,7 @@ export default function NewProductPage() {
       const form = e.currentTarget as HTMLFormElement;
       const fileInput = (form.elements.namedItem("files") as HTMLInputElement) || null;
       const list = fileInput?.files;
-      const pickedFiles = list && list.length ? Array.from(list) : [];
+      const pickedFiles: File[] = list && list.length ? (Array.from(list) as File[]) : [];
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -65,7 +65,7 @@ export default function NewProductPage() {
       if (id && pickedFiles.length) {
         try {
           for (let i = 0; i < pickedFiles.length; i++) {
-            const file = pickedFiles[i];
+            const file: File = pickedFiles[i]!;
             const fd = new FormData();
             fd.set("file", file);
             fd.set("slug", createdSlug || `product-${Date.now()}`);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import Stripe from "stripe";
 import { STRIPE_SECRET_KEY } from "@/lib/env";
 import { coerceItems, priceCart } from "@/lib/pricing";
@@ -33,8 +34,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Stripe server key not configured" }, { status: 500 });
     }
 
-    const body = (await req.json().catch(() => ({}))) as Partial<PostBody> | undefined;
-    const items = coerceItems(body?.items);
+    const Body = z.object({
+      items: z.unknown(),
+      capture: z.enum(["auto", "manual"]).optional(),
+      save_card: z.boolean().optional(),
+      customerId: z.string().optional(),
+      customerEmail: z.string().email().optional(),
+      idempotencyKey: z.string().optional(),
+      description: z.string().optional(),
+      country: z.string().optional(),
+      state: z.string().optional(),
+      postalCode: z.string().optional(),
+    });
+    const jsonUnknown = await req.json().catch(() => undefined);
+    const parsed = Body.safeParse(jsonUnknown ?? {});
+    if (!parsed.success) return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+    const body = parsed.data as Partial<PostBody>;
+    const items = coerceItems(body.items);
     if (!items.length) {
       return NextResponse.json({ error: "No items provided" }, { status: 400 });
     }
@@ -52,11 +68,9 @@ export async function POST(req: Request) {
 
     const params: Stripe.PaymentIntentCreateParams = {
       amount: quote.total,
-      currency: quote.currency as Stripe.Checkout.SessionCreateParams.PaymentIntentData.Currency,
+      currency: quote.currency,
       automatic_payment_methods: { enabled: true },
       capture_method: capture === "manual" ? "manual" : "automatic",
-      description: body?.description || undefined,
-      receipt_email: customerEmail || undefined,
       metadata: {
         app: "bsfront",
         save_card: String(saveCard),
@@ -65,13 +79,13 @@ export async function POST(req: Request) {
         tax: String(quote.tax),
       },
     };
+    if (body.description) params.description = body.description;
+    if (customerEmail) params.receipt_email = customerEmail;
 
     if (customerId) params.customer = customerId;
     if (saveCard) params.setup_future_usage = "off_session";
 
-    const intent = await stripe.paymentIntents.create(params, {
-      idempotencyKey,
-    });
+    const intent = await stripe.paymentIntents.create(params, idempotencyKey ? { idempotencyKey } : undefined);
 
     // Persist a draft order (best-effort)
     try {
@@ -82,7 +96,14 @@ export async function POST(req: Request) {
         capture_method: params.capture_method === "manual" ? "manual" : "automatic",
         save_card: Boolean(saveCard),
         stripe_payment_intent_id: intent.id,
-        items: items.map((it) => ({ id: it.id, name: it.name, unitPrice: it.unitPrice, quantity: it.quantity, breakdown: it.breakdown, config: it.config })),
+        items: items.map((it) => ({
+          id: it.id,
+          name: it.name,
+          unitPrice: it.unitPrice,
+          quantity: it.quantity,
+          ...(it.breakdown ? { breakdown: it.breakdown } : {}),
+          ...(it.config ? { config: it.config } : {}),
+        })),
       });
     } catch (e) {
       console.warn("Order persistence failed (non-fatal)", e);
@@ -104,9 +125,10 @@ export async function POST(req: Request) {
       capture,
       warnings,
     });
-  } catch (err: any) {
-    const message = err?.message || "Unknown error";
-    const status = err?.statusCode || 500;
+  } catch (err: unknown) {
+    const anyErr = err as { message?: string; statusCode?: number } | undefined;
+    const message = anyErr?.message || "Unknown error";
+    const status = anyErr?.statusCode || 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

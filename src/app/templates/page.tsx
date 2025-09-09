@@ -9,7 +9,7 @@ import { useSupabaseUser } from "@/app/hooks/useSupabaseUser";
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useSupabaseUser();
+  const { loading: authLoading } = useSupabaseUser();
   const [templates, setTemplates] = useState<BoardTemplate[] | null>(null);
   const [myTemplates, setMyTemplates] = useState<BoardTemplate[] | null>(null);
   const [error, setError] = useState<string | null>(null);

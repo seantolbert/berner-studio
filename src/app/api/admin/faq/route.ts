@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
@@ -28,16 +29,28 @@ export async function POST(req: NextRequest) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const body = (await req.json().catch(() => ({}))) as any;
+  const Body = z.object({
+    question: z.string().min(1),
+    answer: z.string().min(1),
+    position: z.number().int().nonnegative().optional(),
+    published: z.boolean().optional(),
+  });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid body", issues: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+  const b = parsed.data;
   const item = {
-    question: String(body.question || ""),
-    answer: String(body.answer || ""),
-    position: body.position != null ? Number(body.position) | 0 : 0,
-    published: Boolean(body.published ?? true),
+    question: b.question,
+    answer: b.answer,
+    position: b.position ?? 0,
+    published: b.published ?? true,
   };
-  if (!item.question || !item.answer) return NextResponse.json({ error: "Missing question or answer" }, { status: 400 });
   const { data, error } = await adminSupabase.from("faq").insert(item).select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ id: data?.id });
 }
-

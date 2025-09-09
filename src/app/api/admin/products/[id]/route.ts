@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
@@ -12,11 +13,11 @@ function slugify(input: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = requireAdminBasicAuth(req);
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = requireAdminBasicAuth(_req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const id = params.id;
+  const { id } = await ctx.params;
   const { data, error } = await adminSupabase
     .from("products")
     .select("id, slug, name, price_cents, category, status, short_desc, long_desc, primary_image_url, tags, updated_at, created_at")
@@ -27,25 +28,39 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ item: data });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const id = params.id;
-  const body = (await req.json().catch(() => ({}))) as any;
-  const updates: any = {};
-  if (body.name) updates.name = String(body.name).slice(0, 200);
-  if (body.price_cents != null) updates.price_cents = Math.max(0, Number(body.price_cents) | 0);
-  if (body.category) updates.category = String(body.category);
-  if (body.short_desc !== undefined) updates.short_desc = body.short_desc ? String(body.short_desc) : null;
-  if (body.long_desc !== undefined) updates.long_desc = body.long_desc ? String(body.long_desc) : null;
-  if (body.status) updates.status = ["draft", "published", "archived"].includes(body.status) ? body.status : "draft";
-  if (body.primary_image_url !== undefined) updates.primary_image_url = body.primary_image_url ? String(body.primary_image_url) : null;
-  if (Array.isArray(body.tags)) updates.tags = body.tags.map((t: any) => String(t));
+  const { id } = await ctx.params;
+  const Body = z.object({
+    name: z.string().max(200).optional(),
+    price_cents: z.number().int().nonnegative().optional(),
+    category: z.string().optional(),
+    short_desc: z.string().nullable().optional(),
+    long_desc: z.string().nullable().optional(),
+    status: z.enum(["draft", "published", "archived"]).optional(),
+    primary_image_url: z.string().url().nullable().optional(),
+    tags: z.array(z.string()).optional(),
+    slug: z.string().optional(),
+  });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+  const b = parsed.data;
+  const updates: Record<string, unknown> = {};
+  if (b.name) updates.name = b.name;
+  if (b.price_cents != null) updates.price_cents = b.price_cents;
+  if (b.category) updates.category = b.category;
+  if (b.short_desc !== undefined) updates.short_desc = b.short_desc;
+  if (b.long_desc !== undefined) updates.long_desc = b.long_desc;
+  if (b.status) updates.status = b.status;
+  if (b.primary_image_url !== undefined) updates.primary_image_url = b.primary_image_url;
+  if (b.tags) updates.tags = b.tags.map((t) => String(t));
 
   // Handle slug change and record previous slug
-  if (body.slug) {
-    const nextSlug = slugify(body.slug);
+  if (b.slug) {
+    const nextSlug = slugify(b.slug);
     const { data: prod } = await adminSupabase.from("products").select("slug").eq("id", id).maybeSingle();
     if (prod && prod.slug !== nextSlug) {
       const { data: existing } = await adminSupabase.from("products").select("id").eq("slug", nextSlug).maybeSingle();
@@ -63,11 +78,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = requireAdminBasicAuth(req);
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = requireAdminBasicAuth(_req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const id = params.id;
+  const { id } = await ctx.params;
   // Soft delete: set deleted_at and archived status
   const { error } = await adminSupabase
     .from("products")
@@ -76,4 +91,3 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-

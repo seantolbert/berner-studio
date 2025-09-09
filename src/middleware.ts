@@ -18,7 +18,7 @@ export function middleware(req: NextRequest) {
     return unauthorized();
   }
   try {
-    const [, base64] = auth.split(" ");
+    const base64 = auth.split(" ")[1] ?? "";
     const decoded = Buffer.from(base64, "base64").toString("utf8");
     const [u, p] = decoded.split(":");
     if (u === user && p === pass) {
@@ -38,4 +38,3 @@ function unauthorized() {
 export const config = {
   matcher: ["/admin/:path*"],
 };
-

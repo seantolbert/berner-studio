@@ -96,9 +96,7 @@ export default function BoardPreview({
                 ? rowColors.slice().reverse()
                 : rowColors;
               const colCount = rowColors.length || cols;
-              const handleClick: React.MouseEventHandler<
-                HTMLButtonElement
-              > = () => onRowClick(i);
+              const handleClick = () => onRowClick(i);
               const handleTransitionEnd = (
                 idx: number,
                 e: React.TransitionEvent<HTMLButtonElement>
@@ -231,7 +229,7 @@ export default function BoardPreview({
                       selected={selectedRow === i}
                       deselecting={deselectingRows.has(i)}
                       compact={minimal}
-                      onClick={interactive ? () => handleClick() : undefined}
+                      {...(interactive ? { onClick: (_idx: number) => handleClick() } : {})}
                       onTransitionEnd={handleTransitionEnd}
                     />
                     {!minimal && (

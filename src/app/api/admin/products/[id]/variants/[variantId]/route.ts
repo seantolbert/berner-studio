@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
@@ -7,19 +8,30 @@ export const dynamic = "force-dynamic";
 function normColor(c: string) { return (c || "").trim(); }
 function normSize(s: string) { return (s || "").trim().toUpperCase(); }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string; variantId: string } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string; variantId: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { id, variantId } = params;
-  const body = (await req.json().catch(() => ({}))) as any;
-  const updates: any = {};
-  if (body.color != null) updates.color = normColor(String(body.color));
-  if (body.size != null) updates.size = normSize(String(body.size));
-  if (body.sku !== undefined) updates.sku = body.sku ? String(body.sku) : null;
-  if (body.price_cents_override !== undefined) updates.price_cents_override = body.price_cents_override != null ? Math.max(0, Number(body.price_cents_override) | 0) : null;
-  if (body.status) updates.status = body.status === "published" ? "published" : "draft";
-  if (body.image_url !== undefined) updates.image_url = body.image_url ? String(body.image_url) : null;
+  const { id, variantId } = await ctx.params;
+  const Body = z.object({
+    color: z.string().optional(),
+    size: z.string().optional(),
+    sku: z.string().nullable().optional(),
+    price_cents_override: z.number().int().nonnegative().nullable().optional(),
+    status: z.enum(["draft", "published"]).optional(),
+    image_url: z.string().url().nullable().optional(),
+  });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+  const b = parsed.data;
+  const updates: Record<string, unknown> = {};
+  if (b.color != null) updates.color = normColor(b.color);
+  if (b.size != null) updates.size = normSize(b.size);
+  if (b.sku !== undefined) updates.sku = b.sku ?? null;
+  if (b.price_cents_override !== undefined) updates.price_cents_override = b.price_cents_override ?? null;
+  if (b.status) updates.status = b.status;
+  if (b.image_url !== undefined) updates.image_url = b.image_url ?? null;
 
   // If color/size change, ensure no conflict
   if ((updates.color || updates.size)) {
@@ -58,11 +70,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string; variantId: string } }) {
-  const auth = requireAdminBasicAuth(req);
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string; variantId: string }> }) {
+  const auth = requireAdminBasicAuth(_req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { id, variantId } = params;
+  const { id, variantId } = await ctx.params;
   const { error } = await adminSupabase
     .from("product_variants")
     .delete()
@@ -71,4 +83,3 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-

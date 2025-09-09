@@ -2,18 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 // Preview moved into PreviewPane for clarity
-import PreviewPane from "../components/PreviewPane";
-import { calculateBoardPrice, PRICING_SSO } from "../pricing";
+import PreviewPane from "@features/board-builder/ui/PreviewPane";
+import { calculateBoardPrice, PRICING_SSO } from "@features/board-builder/lib/pricing";
 import { estimateBoardETA } from "@/lib/leadtime";
-import CostSummary from "../components/CostSummary";
-import { ModalProvider, ModalRoot } from "../components/modal/ModalProvider";
-import AddToCartButton from "../components/AddToCartButton";
-import ExtrasFormControls from "../components/ExtrasFormControls";
+import CostSummary from "@features/board-builder/ui/CostSummary";
+import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/ModalProvider";
+import AddToCartButton from "@features/board-builder/ui/AddToCartButton";
+import ExtrasFormControls from "@features/board-builder/ui/ExtrasFormControls";
 
 type Size = "small" | "regular" | "large";
 
 export default function ExtrasPage() {
-  const [loaded, setLoaded] = useState(false);
   const [size, setSize] = useState<Size>("regular");
   const [strip3Enabled, setStrip3Enabled] = useState(false);
   const [edgeProfile, setEdgeProfile] = useState<"square" | "chamfer" | "roundover">("square");
@@ -40,9 +39,9 @@ export default function ExtrasPage() {
           order: parsed.boardData.order,
         });
       }
-      setLoaded(true);
+      // no-op
     } catch {
-      setLoaded(true);
+      // no-op
     }
   }, []);
 

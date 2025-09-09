@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { formatCurrencyCents } from "@/lib/money";
 
@@ -9,6 +9,14 @@ function formatUsd(cents: number) {
 }
 
 export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen w-full p-6">Loading…</main>}>
+      <CheckoutSuccessContent />
+    </Suspense>
+  );
+}
+
+function CheckoutSuccessContent() {
   const params = useSearchParams();
   const router = useRouter();
   const authorizedOnly = params.get("authorized") === "1";

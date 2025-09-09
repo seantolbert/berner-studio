@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { WOODS, woodByKey } from "../components/woods";
+import { useState } from "react";
+import { WOODS } from "../components/woods";
 import type { RowOrder, Size } from "../components/preview/useRowDnD";
 import type { BoardTemplate } from "../../templates";
 
@@ -47,6 +47,7 @@ export function useBoardBuilder() {
     if (!canUndo) return;
     setBoardData((current) => {
       const prev = history[history.length - 1];
+      if (!prev) return current;
       setHistory((h) => h.slice(0, -1));
       setFuture((f) => [...f, clone(current)]);
       const nextState = clone(prev);
@@ -59,6 +60,7 @@ export function useBoardBuilder() {
     if (!canRedo) return;
     setBoardData((current) => {
       const nextItem = future[future.length - 1];
+      if (!nextItem) return current;
       setFuture((f) => f.slice(0, -1));
       setHistory((h) => [...h, clone(current)]);
       const nextState = clone(nextItem);
@@ -70,17 +72,24 @@ export function useBoardBuilder() {
   const handleRandomize = () => {
     const woodKeys = WOODS.map((w) => w.key);
     const next = clone(boardData);
-    next.strips = next.strips.map((row, ri) => {
+    next.strips = next.strips.map((row, ri): (string | null)[] => {
       const active = ri !== 2 || strip3Enabled;
       if (!active) return row.slice();
-      return row.map(() => woodKeys[Math.floor(Math.random() * woodKeys.length)]);
+      const newRow: (string | null)[] = row.map(
+        () => woodKeys[Math.floor(Math.random() * woodKeys.length)] as string | null
+      );
+      return newRow;
     });
     const allowedStrips = strip3Enabled ? [1, 2, 3] : [1, 2];
     const rowCount = next.order?.length ?? (size === "small" ? 10 : size === "regular" ? 14 : 16);
-    next.order = Array.from({ length: rowCount }, () => ({
-      stripNo: allowedStrips[Math.floor(Math.random() * allowedStrips.length)],
-      reflected: Math.random() < 0.5,
-    }));
+    next.order = Array.from({ length: rowCount }, () => {
+      const idx = Math.floor(Math.random() * allowedStrips.length);
+      const picked = allowedStrips[idx] ?? 1;
+      return {
+        stripNo: picked,
+        reflected: Math.random() < 0.5,
+      } as typeof next.order[number];
+    });
     console.log("Randomize applied. Board Data:", next);
     setBoardDataWithHistory(next);
   };
@@ -154,9 +163,10 @@ export function useBoardBuilder() {
     setBoardDataWithHistory((prev) => {
       const next = clone(prev);
       if (rowIndex >= 0 && rowIndex < next.order.length) {
+        const curr = next.order[rowIndex] ?? { stripNo: 1, reflected: false };
         next.order[rowIndex] = {
-          ...next.order[rowIndex],
-          reflected: !next.order[rowIndex].reflected,
+          stripNo: curr.stripNo,
+          reflected: !curr.reflected,
         };
       }
       console.log("Row reflect toggled.", { rowIndex, reflected: next.order[rowIndex]?.reflected, next });
@@ -170,9 +180,10 @@ export function useBoardBuilder() {
       if (rowIndex < 0 || rowIndex >= next.order.length) return next;
       const maxStrip = strip3Enabled ? 3 : 2;
       const desired = Math.min(Math.max(1, stripNo), maxStrip);
+      const curr = next.order[rowIndex] ?? { stripNo: 1, reflected: false };
       next.order[rowIndex] = {
-        ...next.order[rowIndex],
         stripNo: desired,
+        reflected: curr.reflected,
       };
       console.log("Row strip changed.", { rowIndex, stripNo: desired, next });
       return next;

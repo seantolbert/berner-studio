@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
@@ -7,10 +8,10 @@ export const dynamic = "force-dynamic";
 type VariantInput = {
   color: string;
   size: string;
-  sku?: string | null;
-  price_cents_override?: number | null;
-  status?: "draft" | "published";
-  image_url?: string | null;
+  sku?: string | null | undefined;
+  price_cents_override?: number | null | undefined;
+  status?: "draft" | "published" | undefined;
+  image_url?: string | null | undefined;
 };
 
 function normColor(c: string) {
@@ -21,11 +22,11 @@ function normSize(s: string) {
   return (s || "").trim().toUpperCase();
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = requireAdminBasicAuth(req);
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = requireAdminBasicAuth(_req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { id } = params;
+  const { id } = await ctx.params;
   const { data, error } = await adminSupabase
     .from("product_variants")
     .select("id, color, size, sku, price_cents_override, status, image_url, updated_at")
@@ -36,20 +37,28 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ items: data || [] });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { id } = params;
-  const body = (await req.json().catch(() => ({}))) as any;
-  const inputs: VariantInput[] = Array.isArray(body?.items)
-    ? body.items
-    : body?.item
-    ? [body.item]
-    : [];
+  const { id } = await ctx.params;
+  const Variant = z.object({
+    color: z.string(),
+    size: z.string(),
+    sku: z.string().nullable().optional(),
+    price_cents_override: z.number().int().nonnegative().nullable().optional(),
+    status: z.enum(["draft", "published"]).optional(),
+    image_url: z.string().url().nullable().optional(),
+  });
+  const Body = z.object({ items: z.array(Variant).optional(), item: Variant.optional() });
+  const jsonUnknown = await req.json().catch(() => undefined);
+  const parsed = Body.safeParse(jsonUnknown);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
+  const b = parsed.data;
+  const inputs: VariantInput[] = b.items ? b.items : b.item ? [b.item] : [];
   if (!inputs.length) return NextResponse.json({ error: "No variants provided" }, { status: 400 });
 
-  const results: { created: number; updated: number; errors: Array<{ input: any; error: string }> } = {
+  const results: { created: number; updated: number; errors: Array<{ input: VariantInput; error: string }> } = {
     created: 0,
     updated: 0,
     errors: [],
@@ -98,4 +107,3 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   return NextResponse.json(results);
 }
-

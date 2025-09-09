@@ -32,8 +32,9 @@ export async function POST(req: Request) {
     if (STRIPE_WEBHOOK_SECRET && sig) {
       try {
         event = stripe.webhooks.constructEvent(buf, sig, STRIPE_WEBHOOK_SECRET);
-      } catch (err: any) {
-        return NextResponse.json({ error: `Webhook signature verification failed: ${err?.message || err}` }, { status: 400 });
+      } catch (err: unknown) {
+        const anyErr = err as { message?: string } | undefined;
+        return NextResponse.json({ error: `Webhook signature verification failed: ${anyErr?.message || String(err)}` }, { status: 400 });
       }
     } else {
       if (isProd) {
@@ -54,7 +55,9 @@ export async function POST(req: Request) {
         await markOrderPaidByPI(pi.id).catch(() => {});
         await recordPaymentEvent({
           pi_id: pi.id,
-          pm_id: (pi.payment_method as any)?.id || (typeof pi.payment_method === 'string' ? pi.payment_method : null),
+          pm_id: (typeof pi.payment_method === 'object' && pi.payment_method && 'id' in (pi.payment_method as any))
+            ? (pi.payment_method as Stripe.PaymentMethod).id
+            : (typeof pi.payment_method === 'string' ? pi.payment_method : null),
           amount_cents: pi.amount_received || pi.amount,
           currency: pi.currency,
           status: pi.status,
@@ -92,8 +95,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (err: any) {
-    const message = err?.message || "Unhandled error";
+  } catch (err: unknown) {
+    const anyErr = err as { message?: string } | undefined;
+    const message = anyErr?.message || "Unhandled error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

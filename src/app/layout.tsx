@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import dynamic from "next/dynamic";
+import AppHeader from "@/app/components/AppHeader";
+import AppFooter from "@/app/components/AppFooter";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -43,12 +44,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: "no",
+  userScalable: false,
 };
-
-// Load client-only header/footer dynamically to avoid require()
-const AppHeader = dynamic(() => import("@/app/components/AppHeader"), { ssr: false });
-const AppFooter = dynamic(() => import("@/app/components/AppFooter"), { ssr: false });
 
 export default function RootLayout({
   children,

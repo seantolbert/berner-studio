@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import Stripe from "stripe";
 import { STRIPE_SECRET_KEY } from "@/lib/env";
 
@@ -19,25 +20,33 @@ export async function POST(req: Request) {
     if (!STRIPE_SECRET_KEY || !stripe) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
     }
-    const body = (await req.json().catch(() => ({}))) as Partial<Body> | undefined;
-    const customer = body?.customerId;
-    const idempotencyKey = body?.idempotencyKey || req.headers.get("x-idempotency-key") || undefined;
+    const BodySchema = z.object({ customerId: z.string().optional(), idempotencyKey: z.string().optional() });
+    const jsonUnknown = await req.json().catch(() => undefined);
+    const parsed = jsonUnknown ? BodySchema.safeParse(jsonUnknown) : { success: true, data: {} } as const;
+    if (!('success' in parsed) || !parsed.success) {
+      return NextResponse.json({ error: "Invalid body", issues: (parsed as any).error.flatten?.() }, { status: 400 });
+    }
+    const data = (parsed as any).data as Partial<Body>;
+    const customer = data.customerId;
+    const idempotencyKey = data.idempotencyKey ?? req.headers.get("x-idempotency-key") ?? undefined;
 
-    const si = await stripe.setupIntents.create(
-      {
-        payment_method_types: ["card"],
-        usage: "off_session",
-        customer: customer || undefined,
-        automatic_payment_methods: { enabled: true },
-      },
-      { idempotencyKey }
-    );
+    const reqOpts: Stripe.RequestOptions | undefined = idempotencyKey
+      ? { idempotencyKey }
+      : undefined;
+    const params: Stripe.SetupIntentCreateParams = {
+      payment_method_types: ["card"],
+      usage: "off_session",
+      automatic_payment_methods: { enabled: true },
+    };
+    if (customer) params.customer = customer;
+
+    const si = await stripe.setupIntents.create(params, reqOpts);
 
     return NextResponse.json({ id: si.id, clientSecret: si.client_secret });
-  } catch (err: any) {
-    const status = err?.statusCode || 500;
-    const message = err?.message || "Unknown error";
+  } catch (err: unknown) {
+    const anyErr = err as { statusCode?: number; message?: string } | undefined;
+    const status = anyErr?.statusCode || 500;
+    const message = anyErr?.message || "Unknown error";
     return NextResponse.json({ error: message }, { status });
   }
 }
-

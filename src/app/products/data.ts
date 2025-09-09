@@ -23,7 +23,4 @@ export const PRODUCTS: Product[] = [
   { slug: "crewneck", name: "Crewneck", priceCents: 4200, category: "apparel", description: "Classic fit crewneck sweatshirt." },
 ];
 
-export function getProductBySlug(slug: string): Product | undefined {
-  return PRODUCTS.find((p) => p.slug === slug);
-}
-
+// Internal consumers can search PRODUCTS directly if needed.

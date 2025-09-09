@@ -63,8 +63,8 @@ export function estimateBoardETA(cfg: BoardConfig, today = new Date()): EtaRange
   }
   // Very rough complexity factor based on filled cells
   try {
-    const strips = cfg.boardData?.strips || [];
-    const cells = countFilledCells(strips as any, cfg.strip3Enabled);
+    const strips: (string | null)[][] = cfg.boardData?.strips || [];
+    const cells = countFilledCells(strips, cfg.strip3Enabled);
     const extra = Math.floor(cells / 60); // +1 day per 60 cells
     prodMin += extra;
     prodMax += extra;
@@ -99,7 +99,16 @@ export function estimateProductETA(today = new Date()): EtaRange {
   return { productionDays: { min: prodMin, max: prodMax }, shippingDays: { min: shipMin, max: shipMax }, startDate, endDate, label: formatEtaLabel(startDate, endDate) };
 }
 
-export function estimateCartETA(items: any[], today = new Date()): EtaRange | null {
+type CartItemETA = {
+  config?: {
+    size?: Size;
+    strip3Enabled?: boolean;
+    boardData?: { strips: (string | null)[][] };
+    extras?: { edgeProfile?: "square" | "roundover" | "chamfer"; chamferSize?: number; grooveEnabled?: boolean };
+  };
+};
+
+export function estimateCartETA(items: CartItemETA[], today = new Date()): EtaRange | null {
   if (!Array.isArray(items) || items.length === 0) return null;
   let prodMin = 0, prodMax = 0;
   let shipMin = SHIPPING_STANDARD.min, shipMax = SHIPPING_STANDARD.max;
@@ -112,8 +121,8 @@ export function estimateCartETA(items: any[], today = new Date()): EtaRange | nu
       const eta = estimateBoardETA({
         size: it.config.size,
         strip3Enabled: Boolean(it.config.strip3Enabled),
-        boardData: it.config.boardData,
-        extras: it.config.extras,
+        ...(it.config.boardData ? { boardData: it.config.boardData } : {}),
+        ...(it.config.extras ? { extras: it.config.extras } : {}),
       }, today);
       // For mixed carts, overall ETA is dominated by the slowest item
       const s = eta.startDate;
@@ -133,10 +142,9 @@ export function estimateCartETA(items: any[], today = new Date()): EtaRange | nu
   return { productionDays: { min: prodMin, max: prodMax }, shippingDays: { min: shipMin, max: shipMax }, startDate: start, endDate: end, label: formatEtaLabel(start, end) };
 }
 
-export function formatEtaLabel(start: Date, end: Date) {
+function formatEtaLabel(start: Date, end: Date) {
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
   const s = start.toLocaleDateString(undefined, opts);
   const e = end.toLocaleDateString(undefined, opts);
   return s === e ? `Arrives by ${e}` : `Arrives ${s}–${e}`;
 }
-

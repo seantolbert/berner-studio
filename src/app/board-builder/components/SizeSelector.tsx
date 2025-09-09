@@ -1,3 +1,5 @@
+import type React from "react";
+
 type Props = {
   selected: "small" | "regular" | "large";
   onSelect: (size: "small" | "regular" | "large") => void;
@@ -15,7 +17,7 @@ export default function SizeSelector({ selected, onSelect }: Props) {
     value,
   }: {
     label: string;
-    shape: JSX.Element;
+    shape: React.ReactNode;
     value: "small" | "regular" | "large";
   }) => (
     <div className="w-full space-y-1">

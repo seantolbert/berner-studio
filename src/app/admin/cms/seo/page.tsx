@@ -1,8 +1,6 @@
 // SEO management placeholder
 import Link from "next/link";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +8,13 @@ export default function AdminSEOPage() {
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">SEO Settings</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">SEO Settings</h1>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/admin" className="underline">Admin Dashboard</Link>
+            <Link href="/admin/cms" className="underline">CMS Home</Link>
+          </div>
+        </div>
         <AdminGuard>
           <div className="mb-4">
             <Link href="/admin/cms" className="text-sm underline">Back to CMS</Link>
@@ -24,4 +28,3 @@ export default function AdminSEOPage() {
     </main>
   );
 }
-

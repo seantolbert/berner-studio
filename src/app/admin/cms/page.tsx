@@ -1,8 +1,6 @@
 // Admin CMS shell with tabs
 import Link from "next/link";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +10,17 @@ export default function AdminCMSPage() {
     { href: "/admin/cms/products", label: "Products" },
     { href: "/admin/cms/media", label: "Media" },
     { href: "/admin/cms/seo", label: "SEO" },
+    { href: "/admin/cms/about", label: "About" },
+    { href: "/admin/cms/faq", label: "FAQ" },
+    { href: "/admin/cms/gallery", label: "Gallery" },
   ];
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">Admin CMS</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">Admin CMS</h1>
+          <Link href="/admin" className="text-sm underline">← Admin Dashboard</Link>
+        </div>
         <AdminGuard>
           <nav className="flex items-center gap-2 mb-4">
             {tabs.map((t) => (

@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 const CATEGORIES = [
   { value: "bottle-openers", label: "Bottle Openers" },
@@ -44,6 +42,7 @@ export default function EditProductPage() {
   const [longDesc, setLongDesc] = useState("");
   const [status, setStatus] = useState("draft");
   const [primaryImage, setPrimaryImage] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // SEO overrides
@@ -53,7 +52,7 @@ export default function EditProductPage() {
   const [ogImageUrl, setOgImageUrl] = useState("");
   const [seoSaving, setSeoSaving] = useState(false);
   const [seoError, setSeoError] = useState<string | null>(null);
-  const [images, setImages] = useState<Array<{ id: string; url: string; alt: string | null; is_primary: boolean; position: number }>>([]);
+  const [images, setImages] = useState<Array<{ id: string; url: string; alt: string | null; is_primary: boolean; position: number; color?: string | null }>>([]);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -80,8 +79,9 @@ export default function EditProductPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to load images");
       setImages(data.items || []);
-    } catch (err: any) {
-      setImgError(err?.message || "Unexpected error");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setImgError(message);
     } finally {
       setImgLoading(false);
     }
@@ -105,6 +105,7 @@ export default function EditProductPage() {
         setLongDesc(p.long_desc || "");
         setStatus(p.status);
         setPrimaryImage(p.primary_image_url || "");
+        setTags(Array.isArray(p.tags) ? p.tags.map((t) => String(t)) : []);
         await refreshImages();
         // Load SEO overrides
         try {
@@ -119,15 +120,17 @@ export default function EditProductPage() {
         } catch {}
         // Load existing variants
         await refreshVariants();
-      } catch (err: any) {
-        if (!aborted) setError(err?.message || "Unexpected error");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unexpected error";
+        if (!aborted) setError(message);
       } finally {
-        if (!aborted) setLoading(true), setLoading(false);
+        if (!aborted) setLoading(false);
       }
     })();
     return () => {
       aborted = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const onSave = async (e: React.FormEvent) => {
@@ -148,13 +151,15 @@ export default function EditProductPage() {
           long_desc: longDesc,
           status,
           primary_image_url: primaryImage || null,
+          tags,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to save");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Unexpected error");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -169,8 +174,9 @@ export default function EditProductPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to delete");
       router.push("/admin/cms/products");
-    } catch (err: any) {
-      setError(err?.message || "Unexpected error");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setError(message);
     } finally {
       setDeleting(false);
     }
@@ -201,8 +207,9 @@ export default function EditProductPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to load variants');
       setExistingVariants(data.items || []);
-    } catch (err: any) {
-      setVariantsError(err?.message || 'Unexpected error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      setVariantsError(message);
     } finally {
       setVariantsLoading(false);
     }
@@ -223,15 +230,22 @@ export default function EditProductPage() {
       if (!res.ok) throw new Error(data?.error || 'Failed to save variants');
       await refreshVariants();
       setVariants([]);
-    } catch (err: any) {
-      setVariantsError(err?.message || 'Unexpected error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      setVariantsError(message);
     }
   }
 
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">Edit Product</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">Edit Product</h1>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/admin" className="underline">Admin Dashboard</Link>
+            <Link href="/admin/cms" className="underline">CMS Home</Link>
+          </div>
+        </div>
         <AdminGuard>
           <div className="mb-4 flex items-center justify-between">
             <Link href="/admin/cms/products" className="text-sm underline">Back to Products</Link>
@@ -273,15 +287,36 @@ export default function EditProductPage() {
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span>Status</span>
-                  <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent">
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </label>
-              </div>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Status</span>
+                <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent">
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+            </div>
+
+            {/* Collections */}
+            <div className="rounded-md border border-black/10 dark:border-white/10 p-3">
+              <div className="text-sm font-medium mb-2">Collections</div>
+              <label className="inline-flex items-center gap-2 mr-4 text-sm">
+                <input
+                  type="checkbox"
+                  checked={tags.includes('purist')}
+                  onChange={(e)=> setTags((prev)=> e.target.checked ? Array.from(new Set([...prev, 'purist'])) : prev.filter(t=>t!=='purist'))}
+                />
+                Purist
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={tags.includes('classics')}
+                  onChange={(e)=> setTags((prev)=> e.target.checked ? Array.from(new Set([...prev, 'classics'])) : prev.filter(t=>t!=='classics'))}
+                />
+                Classics
+              </label>
+            </div>
 
               <label className="flex flex-col gap-1 text-sm">
                 <span>Primary image URL</span>
@@ -341,8 +376,9 @@ export default function EditProductPage() {
                         setUploadAlt("");
                         formEl.reset();
                         await refreshImages();
-                      } catch (err: any) {
-                        setImgError(err?.message || "Unexpected error");
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : "Unexpected error";
+                        setImgError(message);
                       } finally {
                         setUploading(false);
                       }
@@ -390,7 +426,7 @@ export default function EditProductPage() {
                           </div>
                           <div className="p-2 space-y-1">
                             <div className="text-xs truncate" title={im.alt || undefined}>{im.alt || <span className="opacity-60">(no alt)</span>}</div>
-                            <div className="text-[11px] opacity-70">Color: {(im as any).color || '—'}</div>
+                            <div className="text-[11px] opacity-70">Color: {im.color || '—'}</div>
                             <div className="flex items-center gap-2">
                               {!im.is_primary ? (
                                 <button
@@ -407,9 +443,10 @@ export default function EditProductPage() {
                                       if (!res.ok) throw new Error(data?.error || "Failed to set primary");
                                       setPrimaryImage(im.url);
                                       await refreshImages();
-                                    } catch (err: any) {
-                                      setImgError(err?.message || "Unexpected error");
-                                    }
+                                  } catch (err: unknown) {
+                                      const message = err instanceof Error ? err.message : "Unexpected error";
+                                      setImgError(message);
+                                  }
                                   }}
                                 >
                                   Set primary
@@ -417,18 +454,20 @@ export default function EditProductPage() {
                               ) : (
                                 <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-100">Primary</span>
                               )}
+                              <div className="text-[11px] opacity-70">Color: {im.color || '—'}</div>
                               <button
                                 className="h-7 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs"
                                 onClick={async () => {
-                                  const val = prompt('Set color for this image (leave blank to clear):', (im as any).color || '');
+                                  const val = prompt('Set color for this image (leave blank to clear):', im.color || '');
                                   if (val === null) return;
                                   try {
                                     const res = await fetch(`/api/admin/products/${id}/images/${im.id}`, { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ color: val || null }) });
                                     const data = await res.json();
                                     if (!res.ok) throw new Error(data?.error || 'Failed to set color');
                                     await refreshImages();
-                                  } catch(err:any) {
-                                    setImgError(err?.message || 'Unexpected error');
+                                  } catch(err: unknown) {
+                                    const message = err instanceof Error ? err.message : 'Unexpected error';
+                                    setImgError(message);
                                   }
                                 }}
                               >
@@ -443,8 +482,9 @@ export default function EditProductPage() {
                                     const data = await res.json();
                                     if (!res.ok) throw new Error(data?.error || "Failed to delete");
                                     await refreshImages();
-                                  } catch (err: any) {
-                                    setImgError(err?.message || "Unexpected error");
+                                  } catch (err: unknown) {
+                                    const message = err instanceof Error ? err.message : "Unexpected error";
+                                    setImgError(message);
                                   }
                                 }}
                               >
@@ -518,7 +558,7 @@ export default function EditProductPage() {
                           <td className="px-2 py-1"><input value={v.sku} onChange={(e)=>updateVariant(idx,{ sku: e.target.value })} className="h-8 px-2 rounded border border-black/10 dark:border-white/10 bg-transparent" /></td>
                           <td className="px-2 py-1"><input value={v.price_cents_override ?? ''} onChange={(e)=>updateVariant(idx,{ price_cents_override: e.target.value })} placeholder="$0.00" className="h-8 px-2 rounded border border-black/10 dark:border-white/10 bg-transparent w-28" /></td>
                           <td className="px-2 py-1">
-                            <select value={v.status} onChange={(e)=>updateVariant(idx,{ status: e.target.value as any })} className="h-8 px-2 rounded border border-black/10 dark:border-white/10 bg-transparent">
+                            <select value={v.status} onChange={(e)=>updateVariant(idx,{ status: e.target.value as 'draft' | 'published' })} className="h-8 px-2 rounded border border-black/10 dark:border-white/10 bg-transparent">
                               <option value="draft">Draft</option>
                               <option value="published">Published</option>
                             </select>
@@ -633,8 +673,9 @@ export default function EditProductPage() {
                       });
                       const data = await res.json();
                       if (!res.ok) throw new Error(data?.error || "Failed to save SEO");
-                    } catch (err: any) {
-                      setSeoError(err?.message || "Unexpected error");
+                    } catch (err: unknown) {
+                      const message = err instanceof Error ? err.message : "Unexpected error";
+                      setSeoError(message);
                     } finally {
                       setSeoSaving(false);
                     }

@@ -11,22 +11,22 @@ export function useViewportHeight(): number | null {
 
   useEffect(() => {
     const setHeight = () => {
-      const h = (window as any).visualViewport?.height ?? window.innerHeight;
+      const h = window.visualViewport?.height ?? window.innerHeight;
       setVh(Math.round(h));
     };
     setHeight();
-    window.addEventListener("resize", setHeight, { passive: true } as any);
-    (window as any).visualViewport?.addEventListener?.("resize", setHeight, {
+    window.addEventListener("resize", setHeight, { passive: true });
+    window.visualViewport?.addEventListener?.("resize", setHeight, {
       passive: true,
-    } as any);
-    window.addEventListener("orientationchange", setHeight as any);
+    } as AddEventListenerOptions);
+    window.addEventListener("orientationchange", setHeight);
     return () => {
-      window.removeEventListener("resize", setHeight as any);
-      (window as any).visualViewport?.removeEventListener?.(
+      window.removeEventListener("resize", setHeight);
+      window.visualViewport?.removeEventListener?.(
         "resize",
-        setHeight as any
+        setHeight as EventListener
       );
-      window.removeEventListener("orientationchange", setHeight as any);
+      window.removeEventListener("orientationchange", setHeight);
     };
   }, []);
 

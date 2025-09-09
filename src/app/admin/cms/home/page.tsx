@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 export default function AdminHomePage() {
   const [loading, setLoading] = useState(true);
@@ -19,6 +17,8 @@ export default function AdminHomePage() {
   const [boardsTitle, setBoardsTitle] = useState("");
   const [boardsDesc, setBoardsDesc] = useState("");
   const [boardsImg, setBoardsImg] = useState("");
+  const [boardsHeroTitle, setBoardsHeroTitle] = useState("");
+  const [boardsHeroSubtitle, setBoardsHeroSubtitle] = useState("");
 
   const [bottleTitle, setBottleTitle] = useState("");
   const [bottleDesc, setBottleDesc] = useState("");
@@ -49,14 +49,17 @@ export default function AdminHomePage() {
         setBoardsTitle(s.boards_title || "");
         setBoardsDesc(s.boards_description || "");
         setBoardsImg(s.boards_placeholder_url || "");
+        setBoardsHeroTitle(s.boards_hero_title || "");
+        setBoardsHeroSubtitle(s.boards_hero_subtitle || "");
         setBottleTitle(s.bottle_title || "");
         setBottleDesc(s.bottle_description || "");
         setBottleImg(s.bottle_placeholder_url || "");
         setTestimonialsEnabled(Boolean(s.testimonials_enabled));
         setTestimonialQuote(s.testimonial_quote || "");
         setTestimonialAuthor(s.testimonial_author || "");
-      } catch (err: any) {
-        if (!aborted) setError(err?.message || "Unexpected error");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unexpected error";
+        if (!aborted) setError(message);
       } finally {
         if (!aborted) setLoading(false);
       }
@@ -81,6 +84,8 @@ export default function AdminHomePage() {
           boards_title: boardsTitle,
           boards_description: boardsDesc,
           boards_placeholder_url: boardsImg,
+          boards_hero_title: boardsHeroTitle,
+          boards_hero_subtitle: boardsHeroSubtitle,
           bottle_title: bottleTitle,
           bottle_description: bottleDesc,
           bottle_placeholder_url: bottleImg,
@@ -91,8 +96,9 @@ export default function AdminHomePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to save");
-    } catch (err: any) {
-      setError(err?.message || "Unexpected error");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -101,7 +107,13 @@ export default function AdminHomePage() {
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">Home CMS</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">Home CMS</h1>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/admin" className="underline">Admin Dashboard</Link>
+            <Link href="/admin/cms" className="underline">CMS Home</Link>
+          </div>
+        </div>
         <AdminGuard>
           <div className="mb-4">
             <Link href="/admin/cms" className="text-sm underline">Back to CMS</Link>
@@ -132,6 +144,10 @@ export default function AdminHomePage() {
 
               <section className="rounded-lg border border-black/10 dark:border-white/10 p-4">
                 <div className="text-lg font-semibold mb-3">Boards Section</div>
+                <div className="grid md:grid-cols-2 gap-3 mb-3">
+                  <input value={boardsHeroTitle} onChange={(e) => setBoardsHeroTitle(e.target.value)} placeholder="Boards hero title" className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                  <input value={boardsHeroSubtitle} onChange={(e) => setBoardsHeroSubtitle(e.target.value)} placeholder="Boards hero subtitle" className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm" />
+                </div>
                 <div className="grid md:grid-cols-2 gap-3 mb-3">
                   <input value={boardsTitle} onChange={(e) => setBoardsTitle(e.target.value)} placeholder="Title" className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm" />
                   <input value={boardsDesc} onChange={(e) => setBoardsDesc(e.target.value)} placeholder="Description" className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm" />
@@ -172,8 +188,9 @@ export default function AdminHomePage() {
                           throw e;
                         }
                         formEl.reset();
-                      } catch (err: any) {
-                        setImgErr(err?.message || "Upload error");
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : "Upload error";
+                        setImgErr(message);
                       } finally {
                         setUploadingBoards(false);
                       }
@@ -228,8 +245,9 @@ export default function AdminHomePage() {
                           throw e;
                         }
                         formEl.reset();
-                      } catch (err: any) {
-                        setImgErr(err?.message || "Upload error");
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : "Upload error";
+                        setImgErr(message);
                       } finally {
                         setUploadingBottle(false);
                       }

@@ -6,6 +6,20 @@ import { useMemo } from "react";
 
 type EdgeProfile = "square" | "roundover" | "chamfer";
 
+type EdgeOption =
+  | { key: string; label: string; kind: "edged" }
+  | { key: string; label: string; kind: "rounded"; radius?: number }
+  | {
+      key: string;
+      label: string;
+      kind: "chamfer";
+      chamfer?: number;
+      chamferTLX?: number;
+      chamferTLY?: number;
+      chamferBLX?: number;
+      chamferBLY?: number;
+    };
+
 export default function ExtrasFormControls({
   grooveEnabled,
   setGrooveEnabled,
@@ -21,7 +35,7 @@ export default function ExtrasFormControls({
   cornerColors2x2,
 }: {
   grooveEnabled: boolean;
-  setGrooveEnabled: (updater: (v: boolean) => boolean) => void | ((v: boolean) => void) | ((v: boolean) => boolean) | any;
+  setGrooveEnabled: (v: boolean | ((v: boolean) => boolean)) => void;
   edgeProfile: EdgeProfile;
   setEdgeProfile: (v: EdgeProfile) => void;
   borderRadius: number;
@@ -33,17 +47,19 @@ export default function ExtrasFormControls({
   topRowColors: (string | null)[];
   cornerColors2x2: (string | null)[][];
 }) {
+  // Reference to satisfy no-unused-vars for currently unused value
+  void chamferSize;
   const PREVIEW_CELL_PX = 20;
   const VISIBLE_CELLS = 4;
 
-  const EDGE_OPTIONS = useMemo(
+  const EDGE_OPTIONS: EdgeOption[] = useMemo(
     () => [
-      { key: "edged", label: "Edged", kind: "edged" as const },
-      { key: "rounded4", label: "Rounded", kind: "rounded" as const, radius: 4 },
-      { key: "rounded8", label: "Heavy Rounded", kind: "rounded" as const, radius: 8 },
-      { key: "double_chamfer", label: "Double Chamfer", kind: "chamfer" as const, chamfer: 8 },
-      { key: "diamond", label: "Diamond", kind: "chamfer" as const, chamferTLX: 3, chamferTLY: 2, chamferBLX: 6, chamferBLY: 12 },
-      { key: "flat_top", label: "Flat Top", kind: "chamfer" as const, chamferTLX: 0, chamferTLY: 0, chamferBLX: 6, chamferBLY: 12 },
+      { key: "edged", label: "Edged", kind: "edged" },
+      { key: "rounded4", label: "Rounded", kind: "rounded", radius: 4 },
+      { key: "rounded8", label: "Heavy Rounded", kind: "rounded", radius: 8 },
+      { key: "double_chamfer", label: "Double Chamfer", kind: "chamfer", chamfer: 8 },
+      { key: "diamond", label: "Diamond", kind: "chamfer", chamferTLX: 3, chamferTLY: 2, chamferBLX: 6, chamferBLY: 12 },
+      { key: "flat_top", label: "Flat Top", kind: "chamfer", chamferTLX: 0, chamferTLY: 0, chamferBLX: 6, chamferBLY: 12 },
     ],
     []
   );
@@ -149,10 +165,11 @@ export default function ExtrasFormControls({
                     clipPath:
                       opt.kind === "chamfer"
                         ? (() => {
-                            const tX = (opt as any).chamferTLX ?? (opt as any).chamferTL ?? (opt as any).chamfer ?? 8;
-                            const tY = (opt as any).chamferTLY ?? (opt as any).chamferTL ?? (opt as any).chamfer ?? 8;
-                            const bX = (opt as any).chamferBLX ?? (opt as any).chamferBL ?? (opt as any).chamfer ?? 8;
-                            const bY = (opt as any).chamferBLY ?? (opt as any).chamferBL ?? (opt as any).chamfer ?? 8;
+                            const c = opt;
+                            const tX = c.chamferTLX ?? c.chamfer ?? 8;
+                            const tY = c.chamferTLY ?? c.chamfer ?? 8;
+                            const bX = c.chamferBLX ?? c.chamfer ?? 8;
+                            const bY = c.chamferBLY ?? c.chamfer ?? 8;
                             return `polygon(${tX}px 0, 100% 0, 100% 100%, ${bX}px 100%, 0 calc(100% - ${bY}px), 0 ${tY}px)`;
                           })()
                         : undefined,
@@ -180,4 +197,3 @@ export default function ExtrasFormControls({
     </div>
   );
 }
-

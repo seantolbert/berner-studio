@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await adminSupabase
     .from("homepage_settings")
     .select(
-      "promo_enabled, promo_text, hero_title, hero_subtitle, boards_title, boards_description, boards_placeholder_url, bottle_title, bottle_description, bottle_placeholder_url, testimonials_enabled, testimonial_quote, testimonial_author"
+      "promo_enabled, promo_text, hero_title, hero_subtitle, boards_title, boards_description, boards_placeholder_url, boards_hero_title, boards_hero_subtitle, bottle_title, bottle_description, bottle_placeholder_url, testimonials_enabled, testimonial_quote, testimonial_author"
     )
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -32,6 +32,8 @@ export async function PATCH(req: NextRequest) {
     boards_title: body.boards_title ?? null,
     boards_description: body.boards_description ?? null,
     boards_placeholder_url: body.boards_placeholder_url ?? null,
+    boards_hero_title: body.boards_hero_title ?? null,
+    boards_hero_subtitle: body.boards_hero_subtitle ?? null,
     bottle_title: body.bottle_title ?? null,
     bottle_description: body.bottle_description ?? null,
     bottle_placeholder_url: body.bottle_placeholder_url ?? null,
@@ -43,4 +45,3 @@ export async function PATCH(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-

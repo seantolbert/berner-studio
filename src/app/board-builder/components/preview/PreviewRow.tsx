@@ -34,7 +34,9 @@ const PreviewRow = forwardRef(function PreviewRow(
   }: Props,
   ref: ForwardedRef<HTMLButtonElement>
 ) {
-  const ringActive = selected || deselecting;
+  // Currently not altering styling; kept for future
+  void reflected;
+  void deselecting;
   // Tighter selection padding to avoid large vertical jumps
   const paddingClass = selected ? "py-3" : "py-0";
   return (
@@ -50,8 +52,8 @@ const PreviewRow = forwardRef(function PreviewRow(
       aria-label={`Row ${index + 1}: strip ${stripNo}`}
       title={`Row ${index + 1}`}
     >
-      {(colors.length ? colors : Array.from({ length: colCount })).map(
-        (c: any, ci: number) => (
+      {(colors.length ? colors : (Array.from({ length: colCount }) as (string | null)[])).map(
+        (c: string | null, ci: number) => (
           <div
             key={ci}
             className={compact ? undefined : "border border-black/10 dark:border-white/10"}

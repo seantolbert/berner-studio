@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { formatCurrencyCents } from "@/lib/money";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -47,12 +45,28 @@ export default async function AdminProductsPage({
   if (q) query = query!.or(`name.ilike.%${q}%,slug.ilike.%${q}%`);
   if (status) query = query!.eq("status", status);
 
+  type Product = {
+    id: string;
+    slug: string;
+    name: string;
+    price_cents: number;
+    category: string;
+    status: string;
+    updated_at: string;
+  };
+
   const { data: items, error } = await query!;
 
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">Products</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">Products</h1>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/admin" className="underline">Admin Dashboard</Link>
+            <Link href="/admin/cms" className="underline">CMS Home</Link>
+          </div>
+        </div>
         <AdminGuard>
           <div className="mb-4 flex items-center justify-between">
             <Link href="/admin/cms" className="text-sm underline">
@@ -107,7 +121,7 @@ export default async function AdminProductsPage({
                     </td>
                   </tr>
                 ) : items && items.length > 0 ? (
-                  items.map((p: any) => (
+                  (items as Product[]).map((p) => (
                     <tr key={p.id} className="border-t border-black/10 dark:border-white/10">
                       <td className="px-3 py-2">{p.name}</td>
                       <td className="px-3 py-2 font-mono text-xs">{p.slug}</td>

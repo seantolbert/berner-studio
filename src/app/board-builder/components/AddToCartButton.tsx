@@ -24,7 +24,15 @@ export default function AddToCartButton({ item }: { item: CartSnapshot }) {
   const handleAdd = () => {
     try {
       const raw = localStorage.getItem("bs_cart");
-      const arr = raw ? (JSON.parse(raw) as any[]) : [];
+      type StoredLine = {
+        id: string;
+        name: string;
+        unitPrice: number;
+        quantity: number;
+        breakdown: CartSnapshot["breakdown"];
+        config: CartSnapshot["config"];
+      };
+      const arr: StoredLine[] = raw ? (JSON.parse(raw) as StoredLine[]) : [];
       const id = `cart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const line = { id, name: item.name, unitPrice: item.unitPriceCents, quantity: 1, breakdown: item.breakdown, config: item.config };
       const next = Array.isArray(arr) ? [...arr, line] : [line];
@@ -71,4 +79,3 @@ export default function AddToCartButton({ item }: { item: CartSnapshot }) {
     </button>
   );
 }
-

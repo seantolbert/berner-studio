@@ -155,7 +155,6 @@ export default function ExtrasPage() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Extras form below */}
       <div className="w-full p-4">

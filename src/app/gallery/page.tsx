@@ -1,44 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import TemplateButton from "../components/TemplateButton";
-import { listTemplates } from "@/lib/supabase/usage";
-import type { BoardTemplate } from "../templates";
+import { supabase } from "@/lib/supabase/client";
+
+type G = { id: string; url: string; alt: string | null; caption: string | null };
 
 export default function GalleryPage() {
-  const [templates, setTemplates] = useState<BoardTemplate[] | null>(null);
+  const [items, setItems] = useState<G[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
+    let aborted = false;
     (async () => {
       try {
-        const data = await listTemplates();
-        if (mounted) setTemplates(data);
+        const { data, error } = await supabase
+          .from('gallery')
+          .select('id,url,alt,caption')
+          .eq('published', true)
+          .order('position', { ascending: true });
+        if (error) throw error;
+        if (!aborted) setItems((data || []) as any);
       } catch (e: any) {
-        console.error(e);
-        if (mounted) setError(e?.message || "Failed to load gallery");
-      }
+        if (!aborted) setError(e?.message || 'Failed to load gallery');
+      } finally { if (!aborted) setLoading(false); }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { aborted = true; };
   }, []);
 
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-semibold mb-4">Gallery</h1>
-        {error && (
-          <div className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</div>
-        )}
-        {!templates && !error && (
+        {error && <div className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</div>}
+        {loading ? (
           <div className="text-sm opacity-70">Loading…</div>
-        )}
-        {templates && (
+        ) : items.length === 0 ? (
+          <div className="text-sm opacity-70">No images yet.</div>
+        ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {templates.map((t) => (
-              <TemplateButton key={t.id} template={t} />
+            {items.map((g) => (
+              <figure key={g.id} className="rounded-lg overflow-hidden border border-black/10 dark:border-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={g.url} alt={g.alt || ''} className="w-full h-40 object-cover" />
+                {g.caption && <figcaption className="p-2 text-xs opacity-80">{g.caption}</figcaption>}
+              </figure>
             ))}
           </div>
         )}
@@ -46,4 +52,3 @@ export default function GalleryPage() {
     </main>
   );
 }
-

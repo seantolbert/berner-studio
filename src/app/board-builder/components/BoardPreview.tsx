@@ -17,8 +17,8 @@ type Props = {
 };
 
 export default function BoardPreview({
-  isDrawerOpen,
-  onToggleDrawer,
+  isDrawerOpen: _isDrawerOpen,
+  onToggleDrawer: _onToggleDrawer,
   boardData,
   size,
   onReverseRow,
@@ -27,6 +27,9 @@ export default function BoardPreview({
   interactive = true,
   minimal = false,
 }: Props) {
+  // Reference optional props to satisfy no-unused-vars without altering behavior
+  void _isDrawerOpen; // kept for potential future UI linkage
+  void _onToggleDrawer;
   const cols = boardData.strips[0]?.length ?? 12;
   const cellPx = 12; // fixed square size in pixels
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
@@ -88,7 +91,7 @@ export default function BoardPreview({
                 0,
                 Math.min(2, (rowObj?.stripNo ?? 1) - 1)
               );
-              const rowColors = boardData.strips[stripIndex] ?? [];
+              const rowColors: (string | null)[] = boardData.strips[stripIndex] ?? [];
               const displayColors = rowObj?.reflected
                 ? rowColors.slice().reverse()
                 : rowColors;
@@ -221,7 +224,7 @@ export default function BoardPreview({
                     <PreviewRow
                       index={i}
                       stripNo={rowObj?.stripNo as number}
-                      colors={displayColors as any}
+                      colors={displayColors as (string | null)[]}
                       reflected={!!rowObj?.reflected}
                       colCount={colCount}
                       cellPx={cellPx}

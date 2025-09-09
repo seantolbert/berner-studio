@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import dynamic from "next/dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -45,6 +46,10 @@ export const viewport: Viewport = {
   userScalable: "no",
 };
 
+// Load client-only header/footer dynamically to avoid require()
+const AppHeader = dynamic(() => import("@/app/components/AppHeader"), { ssr: false });
+const AppFooter = dynamic(() => import("@/app/components/AppFooter"), { ssr: false });
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,10 +61,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        {/* @ts-expect-error Async Server Component boundary */}
-        <ClientHeaderSlot />
+        <AppHeader />
         {GA_ID ? (
           <>
             <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
@@ -104,16 +108,9 @@ export default function RootLayout({
             `}</Script>
           </>
         ) : null}
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
+        <AppFooter />
       </body>
     </html>
   );
-}
-
-// Separate client wrapper to keep layout a server component
-function ClientHeaderSlot() {
-  // Dynamic import to keep layout a server component
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const AppHeader = require("@/app/components/AppHeader").default as any;
-  return <AppHeader />;
 }

@@ -90,7 +90,7 @@ export default function CheckoutSuccessPage() {
         )}
         {authorizedOnly && piInfo?.id && (
           <div className="text-xs opacity-70 mb-4">
-            To capture later (test): POST <code>/api/capture/{piInfo.id}</code> with optional JSON {"amount_to_capture": cents}.
+            To capture later (test): POST <code>/api/capture/{piInfo.id}</code> with optional JSON <code>{'{'}"amount_to_capture": cents{'}'}</code>.
           </div>
         )}
         <div className="flex items-center justify-center gap-3">

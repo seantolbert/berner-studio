@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { formatCurrencyCents } from "@/lib/money";
 
 type HomeSettings = {
   promo_enabled: boolean;
@@ -23,6 +24,7 @@ type HomeSettings = {
 export default function HomePage() {
   const router = useRouter();
   const [home, setHome] = useState<HomeSettings | null>(null);
+  const [apparel, setApparel] = useState<Array<{ slug: string; name: string; price_cents: number; primary_image_url: string | null }>>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -41,6 +43,33 @@ export default function HomePage() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("slug,name,price_cents,primary_image_url,status,deleted_at,category")
+          .eq("category", "apparel")
+          .eq("status", "published")
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          .limit(12);
+        if (!mounted) return;
+        if (!error) {
+          const items = (data || []).map((p: any) => ({
+            slug: p.slug as string,
+            name: p.name as string,
+            price_cents: p.price_cents as number,
+            primary_image_url: (p.primary_image_url as string) || null,
+          }));
+          setApparel(items);
+        }
+      } catch {}
+    })();
+    return () => { mounted = false; };
   }, []);
   return (
     <main className="min-h-screen w-full flex flex-col items-center justify-center p-6">
@@ -112,7 +141,7 @@ export default function HomePage() {
             <h1 className="text-2xl font-semibold">{home?.boards_title || "Boards"}</h1>
             <button
               type="button"
-              onClick={() => router.push("/templates")}
+              onClick={() => router.push("/boards")}
               className="inline-flex h-9 px-3 rounded-md border border-black/15 dark:border-white/15 text-sm hover:bg-black/5 dark:hover:bg-white/10"
             >
               View all
@@ -135,10 +164,17 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => router.push("/templates")}
+              onClick={() => router.push("/boards?collection=purist")}
               className="inline-flex h-11 px-5 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
             >
               Purist
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/boards?collection=classics")}
+              className="inline-flex h-11 px-5 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Classics
             </button>
             <button
               type="button"
@@ -156,7 +192,7 @@ export default function HomePage() {
             <h2 className="text-xl font-semibold">{home?.bottle_title || "Bottle Openers"}</h2>
             <button
               type="button"
-              onClick={() => router.push("/gallery")}
+              onClick={() => router.push("/bottle-openers")}
               className="inline-flex h-9 px-3 rounded-md border border-black/15 dark:border-white/15 text-sm hover:bg-black/5 dark:hover:bg-white/10"
             >
               View all
@@ -204,40 +240,44 @@ export default function HomePage() {
         {/* Apparel */}
         <section id="apparel" className="rounded-xl border border-black/10 dark:border-white/10 p-6">
           <h2 className="text-xl font-semibold mb-4">Apparel</h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {[ 
-              { slug: "logo-tee", name: "Logo Tee", price: "$25" },
-              { slug: "embroidered-cap", name: "Embroidered Cap", price: "$22" },
-              { slug: "heavy-hoodie", name: "Heavy Hoodie", price: "$48" },
-              { slug: "work-apron", name: "Work Apron", price: "$54" },
-              { slug: "beanie", name: "Beanie", price: "$18" },
-              { slug: "crewneck", name: "Crewneck", price: "$42" },
-            ].map((p) => (
-              <div key={p.slug} className="rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
-                <div className="h-28 bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10" aria-hidden />
-                <div className="p-3">
-                  <div className="text-sm font-medium truncate">{p.name}</div>
-                  <div className="text-xs opacity-70">{p.price}</div>
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/products/${p.slug}`)}
-                      className="inline-flex h-8 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/products/${p.slug}`)}
-                      className="inline-flex h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      Add to cart
-                    </button>
+          {apparel.length === 0 ? (
+            <div className="text-sm opacity-70">No apparel products available.</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {apparel.map((p) => (
+                <div key={p.slug} className="rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
+                  <div className="h-28 bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 flex items-center justify-center" aria-hidden>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {p.primary_image_url ? (
+                      <img src={p.primary_image_url} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs opacity-70">Image coming soon</span>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <div className="text-sm font-medium truncate">{p.name}</div>
+                    <div className="text-xs opacity-70">{formatCurrencyCents(p.price_cents)}</div>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/products/${p.slug}`)}
+                        className="inline-flex h-8 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
+                      >
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/products/${p.slug}`)}
+                        className="inline-flex h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        Add to cart
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="rounded-xl border border-dashed border-black/10 dark:border-white/10 p-6">
@@ -245,50 +285,7 @@ export default function HomePage() {
           <p className="text-sm opacity-70">More sections coming soon.</p>
         </section>
       </div>
-      {/* Footer */}
-      <footer className="w-full mt-10 border-t border-black/10 dark:border-white/10">
-        <div className="mx-auto max-w-5xl p-6 grid gap-8 md:grid-cols-4">
-          <div>
-            <div className="text-base font-semibold mb-2">Berner Studio</div>
-            <p className="text-sm opacity-70">
-              Handcrafted cutting boards and essentials. Built to last, designed by you.
-            </p>
-          </div>
-          <div>
-            <div className="text-sm font-semibold mb-2">Shop</div>
-            <ul className="text-sm space-y-1 opacity-80">
-              <li><button type="button" onClick={() => router.push("/templates")} className="hover:underline">Boards</button></li>
-              <li><a href="#bottle-openers" className="hover:underline">Bottle openers</a></li>
-              <li><a href="#apparel" className="hover:underline">Apparel</a></li>
-              <li><button type="button" onClick={() => router.push("/cart")} className="hover:underline">Cart</button></li>
-            </ul>
-          </div>
-          <div>
-            <div className="text-sm font-semibold mb-2">Company</div>
-            <ul className="text-sm space-y-1 opacity-80">
-              <li><button type="button" onClick={() => router.push("/about")} className="hover:underline">About the maker</button></li>
-              <li><button type="button" onClick={() => router.push("/faq")} className="hover:underline">Care & FAQ</button></li>
-              <li><button type="button" onClick={() => router.push("/gallery")} className="hover:underline">Gallery</button></li>
-            </ul>
-          </div>
-          <div>
-            <div className="text-sm font-semibold mb-2">Stay in the loop</div>
-            <p className="text-sm opacity-70 mb-3">Promos, launches, and tips. No spam.</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="you@example.com"
-                className="flex-1 h-10 px-3 rounded-md border border-black/15 dark:border-white/15 bg-transparent text-sm"
-              />
-              <button className="h-10 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm" type="button">Subscribe</button>
-            </div>
-          </div>
-        </div>
-        <div className="mx-auto max-w-5xl px-6 pb-6 text-xs opacity-60 flex items-center justify-between">
-          <span>© {new Date().getFullYear()} Berner Studio</span>
-          <a href="#" className="hover:underline">Back to top</a>
-        </div>
-      </footer>
+      {/* Footer moved to global layout */}
     </main>
   );
 }

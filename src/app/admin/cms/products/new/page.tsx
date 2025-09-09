@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 const CATEGORIES = [
   { value: "bottle-openers", label: "Bottle Openers" },
@@ -83,15 +81,16 @@ export default function NewProductPage() {
             const imgJson = await imgRes.json();
             if (!imgRes.ok) throw new Error(imgJson?.error || "Failed to save image");
           }
-        } catch (imgErr: any) {
+        } catch (imgErr: unknown) {
           console.warn("One or more image uploads failed", imgErr);
         }
       }
 
       if (id) router.push(`/admin/cms/products/${id}`);
       else router.push("/admin/cms/products");
-    } catch (err: any) {
-      setError(err?.message || "Unexpected error");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +99,13 @@ export default function NewProductPage() {
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">New Product</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">New Product</h1>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/admin" className="underline">Admin Dashboard</Link>
+            <Link href="/admin/cms" className="underline">CMS Home</Link>
+          </div>
+        </div>
         <AdminGuard>
           <div className="mb-4">
             <Link href="/admin/cms/products" className="text-sm underline">Back to Products</Link>

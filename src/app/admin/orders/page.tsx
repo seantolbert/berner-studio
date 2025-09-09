@@ -1,7 +1,6 @@
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { formatCurrencyCents } from "@/lib/money";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const AdminGuard = require("@/app/admin/AdminGuard").default as any;
+import AdminGuard from "@/app/admin/AdminGuard";
 
 function formatUsd(cents: number, currency = "usd") { return formatCurrencyCents(cents, currency); }
 
@@ -21,18 +20,34 @@ export default async function AdminOrdersPage() {
     );
   }
 
-  const { data, error } = await adminSupabase
+  const { data } = await adminSupabase
     .from("orders")
     .select("id, created_at, status, amount_cents, currency, capture_method, email, stripe_payment_intent_id")
     .order("created_at", { ascending: false })
     .limit(25);
 
-  const orders = data || [];
+  type OrderRow = {
+    id: string;
+    created_at: string;
+    status: string;
+    amount_cents: number;
+    currency: string;
+    capture_method: string;
+    email: string | null;
+    stripe_payment_intent_id: string | null;
+  };
+
+  const orders: OrderRow[] = (data as OrderRow[]) || [];
 
   return (
     <main className="min-h-screen w-full p-6">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-3">Orders</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl font-semibold">Orders</h1>
+          <div className="flex items-center gap-3 text-sm">
+            <a href="/admin" className="underline">Admin Dashboard</a>
+          </div>
+        </div>
         <AdminGuard>
           <div className="rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
             <table className="w-full text-sm">
@@ -48,7 +63,7 @@ export default async function AdminOrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o: any) => {
+                {orders.map((o) => {
                   const pi = o.stripe_payment_intent_id as string | null;
                   const piShort = pi ? `${pi.slice(0, 10)}…` : "";
                   const created = new Date(o.created_at).toLocaleString();

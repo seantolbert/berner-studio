@@ -14,10 +14,11 @@ export default function AuthButton() {
 
   const signIn = useCallback(async (provider: "github" | "google") => {
     const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: redirectTo ? { redirectTo } : undefined,
-    });
+    const creds: Parameters<typeof supabase.auth.signInWithOAuth>[0] = { provider } as any;
+    if (redirectTo) {
+      (creds as any).options = { redirectTo };
+    }
+    await supabase.auth.signInWithOAuth(creds);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -30,10 +31,11 @@ export default function AuthButton() {
     setSent(false);
     try {
       const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
-      });
+      const otpArgs: Parameters<typeof supabase.auth.signInWithOtp>[0] = { email } as any;
+      if (redirectTo) {
+        (otpArgs as any).options = { emailRedirectTo: redirectTo };
+      }
+      const { error } = await supabase.auth.signInWithOtp(otpArgs);
       if (error) throw error;
       setSent(true);
     } catch (e: any) {

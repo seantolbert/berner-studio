@@ -17,7 +17,7 @@ function formatUsd(cents: number) {
   return formatCurrencyCents(cents);
 }
 
-function CheckoutForm({ clientSecret, capture }: { clientSecret: string; capture: "auto" | "manual" }) {
+function CheckoutForm({ clientSecret: _clientSecret, capture }: { clientSecret: string; capture: "auto" | "manual" }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();

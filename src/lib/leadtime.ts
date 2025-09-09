@@ -121,8 +121,8 @@ export function estimateCartETA(items: CartItemETA[], today = new Date()): EtaRa
       const eta = estimateBoardETA({
         size: it.config.size,
         strip3Enabled: Boolean(it.config.strip3Enabled),
-        boardData: it.config.boardData,
-        extras: it.config.extras,
+        ...(it.config.boardData ? { boardData: it.config.boardData } : {}),
+        ...(it.config.extras ? { extras: it.config.extras } : {}),
       }, today);
       // For mixed carts, overall ETA is dominated by the slowest item
       const s = eta.startDate;

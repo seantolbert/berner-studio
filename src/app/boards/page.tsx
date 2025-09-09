@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { formatCurrencyCents } from "@/lib/money";
@@ -11,6 +11,14 @@ type Item = { slug: string; name: string; price_cents: number; primary_image_url
 type ProductRow = { slug: string; name: string; price_cents: number; primary_image_url: string | null };
 
 export default function BoardsPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen w-full p-6">Loading…</main>}>
+      <BoardsPageContent />
+    </Suspense>
+  );
+}
+
+function BoardsPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const initialCollection = (params?.get('collection') || '').toLowerCase();

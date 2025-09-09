@@ -52,11 +52,14 @@ export default function ProductPage() {
           .order("color", { ascending: true })
           .order("size", { ascending: true });
         if (!aborted) setVariants((vars || []) as any);
-        if (!aborted && (prod.category === 'apparel') && vars && vars.length) {
-          const c = vars[0].color;
-          const s = vars.find(v => v.color === c)?.size || null;
-          setSelectedColor(c);
-          setSelectedSize(s);
+        if (!aborted && (prod.category === 'apparel')) {
+          const list = (vars ?? []) as Variant[];
+          if (list.length) {
+            const c = list[0]!.color;
+            const s = list.find(v => v.color === c)?.size || null;
+            setSelectedColor(c);
+            setSelectedSize(s);
+          }
         }
       } finally {
         if (!aborted) setLoading(false);
@@ -118,18 +121,30 @@ export default function ProductPage() {
 
   return (
     <main className="min-h-screen w-full p-6">
-      <ProductJsonLd product={{ slug: product.slug, name: product.name, description: product.short_desc || product.long_desc || '', priceCents: displayPrice, image: product.primary_image_url || undefined }} />
+      <ProductJsonLd
+        product={{
+          slug: product.slug,
+          name: product.name,
+          description: product.short_desc || product.long_desc || '',
+          priceCents: displayPrice,
+          ...(product.primary_image_url ? { image: product.primary_image_url } : {}),
+        }}
+      />
       <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-2 items-start">
         <div className="rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
           <div className="w-full aspect-[4/3] bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 flex items-center justify-center text-sm opacity-70">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {gallery.length > 0 ? (
-              <img src={gallery[0].url} alt={gallery[0].alt || product.name} className="w-full h-full object-cover" />
-            ) : product.primary_image_url ? (
+            {(() => {
+              const first = gallery[0];
+              if (first) {
+                return <img src={first.url} alt={first.alt || product.name} className="w-full h-full object-cover" />;
+              }
+              return null;
+            })() || (product.primary_image_url ? (
               <img src={product.primary_image_url} alt={product.name} className="w-full h-full object-cover" />
             ) : (
               <span>Image coming soon</span>
-            )}
+            ))}
           </div>
           {gallery.length > 1 && (
             <div className="grid grid-cols-4 gap-2 p-2">

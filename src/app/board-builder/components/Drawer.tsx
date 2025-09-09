@@ -76,12 +76,12 @@ export default function Drawer({
           <div className="flex-1 grid grid-rows-[50%_1fr] gap-3 overflow-hidden">
             <SizeSelector selected={size} onSelect={onSelectSize} />
             <ControlPanel
-              onUndo={onUndo}
-              onRedo={onRedo}
-              onRandomize={onRandomize}
+              {...(onUndo ? { onUndo } : {})}
+              {...(onRedo ? { onRedo } : {})}
+              {...(onRandomize ? { onRandomize } : {})}
               canUndo={!!canUndo}
               canRedo={!!canRedo}
-              onSave={onSave}
+              {...(onSave ? { onSave } : {})}
               canSave={!!canSave}
               saving={!!saving}
             />

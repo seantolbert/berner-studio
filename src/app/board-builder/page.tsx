@@ -27,7 +27,7 @@ export default function BoardBuilderPage() {
     size,
     handleSelectSize,
     handleRandomize,
-    handleReorder,
+    handleReorder: _handleReorder,
     handleReverseRow,
     handleChangeRowStrip,
     canUndo,
@@ -43,9 +43,7 @@ export default function BoardBuilderPage() {
 
   const isBoardComplete = useMemo(() => {
     const requiredRows = strip3Enabled ? [0, 1, 2] : [0, 1];
-    return requiredRows.every((r) =>
-      boardData.strips[r].every((c) => c !== null)
-    );
+    return requiredRows.every((r) => (boardData.strips[r] ?? []).every((c) => c !== null));
   }, [boardData.strips, strip3Enabled]);
 
   const pricing = useMemo(() => {
@@ -84,7 +82,7 @@ export default function BoardBuilderPage() {
     }
   };
 
-  const handleChangeRowOrder = (_rowIndex: number, _stripNo: number) => {};
+  // noop placeholder removed: handleChangeRowOrder
 
   // Optional: close on Escape for accessibility
   useEffect(() => {

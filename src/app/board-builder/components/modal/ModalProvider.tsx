@@ -31,7 +31,6 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState<React.ReactNode | null>(null);
   const [options, setOptions] = useState<ModalContextValue["options"]>({
-    title: undefined,
     dismissible: true,
     size: "md",
   });
@@ -55,6 +54,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         document.body.style.overflow = prev;
       };
     }
+    return undefined;
   }, [isOpen]);
 
   const value = useMemo<ModalContextValue>(

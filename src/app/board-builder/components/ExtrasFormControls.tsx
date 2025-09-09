@@ -185,7 +185,6 @@ export default function ExtrasFormControls({
                     selected={false}
                     deselecting={false}
                     compact
-                    onClick={undefined}
                   />
                 </div>
               </div>

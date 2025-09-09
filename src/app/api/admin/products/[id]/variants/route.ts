@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 type VariantInput = {
   color: string;
   size: string;
-  sku?: string | null;
-  price_cents_override?: number | null;
-  status?: "draft" | "published";
-  image_url?: string | null;
+  sku?: string | null | undefined;
+  price_cents_override?: number | null | undefined;
+  status?: "draft" | "published" | undefined;
+  image_url?: string | null | undefined;
 };
 
 function normColor(c: string) {
@@ -23,7 +23,7 @@ function normSize(s: string) {
 }
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const auth = requireAdminBasicAuth(req);
+  const auth = requireAdminBasicAuth(_req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
   const { id } = await ctx.params;

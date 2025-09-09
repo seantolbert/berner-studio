@@ -36,9 +36,14 @@ export async function POST(
     const amount_to_capture = body.amount_to_capture;
     const idempotencyKey = body.idempotencyKey ?? req.headers.get("x-idempotency-key") ?? undefined;
 
-    const captured = await stripe.paymentIntents.capture(id, amount_to_capture ? { amount_to_capture } : undefined, {
-      idempotencyKey,
-    });
+    const requestOpts: Stripe.RequestOptions | undefined = idempotencyKey
+      ? { idempotencyKey }
+      : undefined;
+    const captured = await stripe.paymentIntents.capture(
+      id,
+      amount_to_capture ? { amount_to_capture } : undefined,
+      requestOpts
+    );
 
     return NextResponse.json({ id: captured.id, status: captured.status, amount_received: captured.amount_received });
   } catch (err: unknown) {

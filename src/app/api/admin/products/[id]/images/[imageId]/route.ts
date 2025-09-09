@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 }
 
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string; imageId: string }> }) {
-  const auth = requireAdminBasicAuth(req);
+  const auth = requireAdminBasicAuth(_req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
   const { id, imageId } = await ctx.params;

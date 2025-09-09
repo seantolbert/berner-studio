@@ -7,7 +7,7 @@ type Props = {
   onOpenChange: (v: boolean) => void;
   children?: React.ReactNode;
   title?: string;
-  returnFocusRef?: React.RefObject<HTMLElement>;
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
   id?: string;
 };
 
@@ -32,6 +32,7 @@ export default function TopDrawer({ open, onOpenChange, children, title, returnF
         document.body.style.overflow = prev;
       };
     }
+    return undefined;
   }, [open, onOpenChange]);
 
   // Simple focus management: focus panel when opened
@@ -55,18 +56,18 @@ export default function TopDrawer({ open, onOpenChange, children, title, returnF
       );
       const list = Array.from(focusables).filter(el => el.offsetParent !== null);
       if (list.length === 0) return;
-      const first = list[0];
-      const last = list[list.length - 1];
+      const firstEl = list[0]!;
+      const lastEl = list[list.length - 1]!;
       const active = document.activeElement as HTMLElement | null;
       const shift = (e as KeyboardEvent).shiftKey;
       if (shift) {
-        if (active === first || !panel.contains(active)) {
-          last.focus();
+        if (active === firstEl || !panel.contains(active)) {
+          lastEl.focus();
           e.preventDefault();
         }
       } else {
-        if (active === last) {
-          first.focus();
+        if (active === lastEl) {
+          firstEl.focus();
           e.preventDefault();
         }
       }

@@ -73,14 +73,17 @@ export default function Strips({
     if (!selectedKey) return;
     const key = selectedKey;
     // No-op if the cell is already this wood key
-    if (boardData.strips[row][col] === key) return;
+    const currentRow = boardData.strips[row] ?? [];
+    if (currentRow[col] === key) return;
     const next = {
       strips: boardData.strips.map((r, ri) =>
         ri === row ? r.slice() : r.slice()
       ),
       order: boardData.order.map((o) => ({ ...o })),
     };
-    next.strips[row][col] = key;
+    const nextRow = next.strips[row] ?? [];
+    if (!next.strips[row]) next.strips[row] = nextRow as (string | null)[];
+    nextRow[col] = key;
     // Log the JSON object after update
     console.log("Board Data:", next);
     setBoardData(next);
@@ -113,13 +116,13 @@ export default function Strips({
         <div
           className={`h-full flex items-center justify-center min-w-max gap-x-1.25`}
         >
-          {boardData.strips[row].map((cellColor, i) => (
+          {(boardData.strips[row] ?? []).map((cellColor, i) => (
             <button
               key={i}
               type="button"
               onClick={() => handlePaint(row, i)}
               className={`h-10 ${
-                boardData.strips[row].length >= 14 ? "w-4" : "w-5"
+                (boardData.strips[row]?.length ?? 0) >= 14 ? "w-4" : "w-5"
               } rounded-sm border border-black/15 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 ${
                 cellColor ? "bg-transparent" : "bg-white/60 dark:bg-black/20"
               }`}
@@ -127,7 +130,7 @@ export default function Strips({
                 cellColor
                   ? styleForToken(
                       cellColor,
-                      boardData.strips[row].length >= 14 ? 16 : 20
+                      (boardData.strips[row]?.length ?? 0) >= 14 ? 16 : 20
                     )
                   : undefined
               }

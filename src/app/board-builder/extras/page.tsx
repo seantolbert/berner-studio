@@ -13,7 +13,6 @@ import ExtrasFormControls from "@features/board-builder/ui/ExtrasFormControls";
 type Size = "small" | "regular" | "large";
 
 export default function ExtrasPage() {
-  const [loaded, setLoaded] = useState(false);
   const [size, setSize] = useState<Size>("regular");
   const [strip3Enabled, setStrip3Enabled] = useState(false);
   const [edgeProfile, setEdgeProfile] = useState<"square" | "chamfer" | "roundover">("square");
@@ -40,9 +39,9 @@ export default function ExtrasPage() {
           order: parsed.boardData.order,
         });
       }
-      setLoaded(true);
+      // no-op
     } catch {
-      setLoaded(true);
+      // no-op
     }
   }, []);
 

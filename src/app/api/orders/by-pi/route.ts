@@ -4,8 +4,6 @@ import { adminSupabase } from "@/lib/supabase/serverAdmin";
 
 export const dynamic = "force-dynamic";
 
-type Body = { piId?: string };
-
 export async function POST(req: Request) {
   try {
     if (!adminSupabase) {

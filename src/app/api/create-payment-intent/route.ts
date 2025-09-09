@@ -68,11 +68,9 @@ export async function POST(req: Request) {
 
     const params: Stripe.PaymentIntentCreateParams = {
       amount: quote.total,
-      currency: quote.currency as Stripe.PaymentIntentCreateParams.Currency,
+      currency: quote.currency,
       automatic_payment_methods: { enabled: true },
       capture_method: capture === "manual" ? "manual" : "automatic",
-      description: body.description ?? undefined,
-      receipt_email: customerEmail ?? undefined,
       metadata: {
         app: "bsfront",
         save_card: String(saveCard),
@@ -81,6 +79,8 @@ export async function POST(req: Request) {
         tax: String(quote.tax),
       },
     };
+    if (body.description) params.description = body.description;
+    if (customerEmail) params.receipt_email = customerEmail;
 
     if (customerId) params.customer = customerId;
     if (saveCard) params.setup_future_usage = "off_session";
@@ -96,7 +96,14 @@ export async function POST(req: Request) {
         capture_method: params.capture_method === "manual" ? "manual" : "automatic",
         save_card: Boolean(saveCard),
         stripe_payment_intent_id: intent.id,
-        items: items.map((it) => ({ id: it.id, name: it.name, unitPrice: it.unitPrice, quantity: it.quantity, breakdown: it.breakdown, config: it.config })),
+        items: items.map((it) => ({
+          id: it.id,
+          name: it.name,
+          unitPrice: it.unitPrice,
+          quantity: it.quantity,
+          ...(it.breakdown ? { breakdown: it.breakdown } : {}),
+          ...(it.config ? { config: it.config } : {}),
+        })),
       });
     } catch (e) {
       console.warn("Order persistence failed (non-fatal)", e);

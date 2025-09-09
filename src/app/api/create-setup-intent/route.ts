@@ -30,15 +30,17 @@ export async function POST(req: Request) {
     const customer = data.customerId;
     const idempotencyKey = data.idempotencyKey ?? req.headers.get("x-idempotency-key") ?? undefined;
 
-    const si = await stripe.setupIntents.create(
-      {
-        payment_method_types: ["card"],
-        usage: "off_session",
-        customer: customer || undefined,
-        automatic_payment_methods: { enabled: true },
-      },
-      { idempotencyKey }
-    );
+    const reqOpts: Stripe.RequestOptions | undefined = idempotencyKey
+      ? { idempotencyKey }
+      : undefined;
+    const params: Stripe.SetupIntentCreateParams = {
+      payment_method_types: ["card"],
+      usage: "off_session",
+      automatic_payment_methods: { enabled: true },
+    };
+    if (customer) params.customer = customer;
+
+    const si = await stripe.setupIntents.create(params, reqOpts);
 
     return NextResponse.json({ id: si.id, clientSecret: si.client_secret });
   } catch (err: unknown) {

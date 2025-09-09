@@ -7,13 +7,13 @@ import Strips from "./Strips";
 import { useModal } from "./modal/ModalProvider";
 
 type Props = {
-  boardData: { strips: (string | null)[][]; order: number[] };
+  boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
   setBoardData: (
     updater:
-      | { strips: (string | null)[][]; order: number[] }
-      | ((prev: { strips: (string | null)[][]; order: number[] }) => {
+      | { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] }
+      | ((prev: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] }) => {
           strips: (string | null)[][];
-          order: number[];
+          order: { stripNo: number; reflected: boolean }[];
         })
   ) => void;
   strip3Enabled: boolean;
@@ -35,7 +35,7 @@ export default function StripBuilder({
   // Complete only when required strips are fully filled
   const requiredRows = strip3Enabled ? [0, 1, 2] : [0, 1];
   const isAllRequiredStripsComplete = requiredRows.every((r) =>
-    boardData.strips[r].every((c) => c !== null)
+    (boardData.strips[r] ?? []).every((c) => c !== null)
   );
 
   return (

@@ -10,7 +10,6 @@ function sanitizeFilename(name: string) {
 
 async function ensureMediaBucket() {
   try {
-    // @ts-expect-error storage API provides getBucket in supabase-js v2 (types may lag)
     const { data: bucket } = await adminSupabase!.storage.getBucket("media");
     if (!bucket) {
       await adminSupabase!.storage.createBucket("media", { public: true });

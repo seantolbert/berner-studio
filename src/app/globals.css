@@ -6,27 +6,90 @@
 }
 
 @theme inline {
+  /* Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: oklch(22% 0 0); /* near-black ink */
+  --color-paper: oklch(98% 0 0); /* clean paper */
+  --color-muted: oklch(92% 0.01 90);
+  --color-accent: oklch(64% 0.12 45); /* warm accent */
+
+  /* Wood tones (editorial swatches) */
+  --color-maple-300: oklch(88% 0.06 90);
+  --color-maple-500: oklch(80% 0.07 90);
+  --color-oak-600: oklch(64% 0.08 85);
+  --color-walnut-700: oklch(44% 0.06 30);
+  --color-walnut-900: oklch(28% 0.04 30);
+
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 1px 1px -1px rgb(0 0 0 / 0.1);
+  --shadow-elevated: 0 8px 24px -12px rgb(0 0 0 / 0.25);
+
+  /* Spacing rhythm (for editorial rhythm if desired) */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    /* Ensure tokens flip for dark mode so text remains readable */
+    --color-ink: var(--foreground);
+    --color-paper: oklch(14% 0 0);
+    --color-muted: oklch(22% 0.02 90);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    Segoe UI, Roboto, Helvetica Neue, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
 }
 
 /* Trapezoid side tab used for the drawer toggle */
 .trapezoid-tab {
   /* Long vertical side on the right, angled on the left */
   clip-path: polygon(0% 12%, 100% 0%, 100% 100%, 0% 88%);
+}
+
+/* Custom utilities using Tailwind v4 @utility */
+@utility focus-ink {
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@utility card {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid color-mix(in oklch, var(--color-ink), transparent 90%);
+}
+
+@utility grain-bg {
+  /* Subtle noise/grain suggested for tactile feel */
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgb(0 0 0 / 0.04) 0, transparent 100%),
+    radial-gradient(1px 1px at 80% 70%, rgb(0 0 0 / 0.04) 0, transparent 100%);
+  background-size: 200px 200px;
 }

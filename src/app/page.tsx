@@ -10,15 +10,31 @@ type HomeSettings = {
   promo_text: string | null;
   hero_title: string | null;
   hero_subtitle: string | null;
+  home_hero_url: string | null;
+  hero_cta_primary_text: string | null;
+  hero_cta_primary_href: string | null;
+  hero_cta_secondary_text: string | null;
+  hero_cta_secondary_href: string | null;
+  hero_feature_1: string | null;
+  hero_feature_2: string | null;
+  hero_feature_3: string | null;
   boards_title: string | null;
   boards_description: string | null;
   boards_placeholder_url: string | null;
+  boards_view_all_text: string | null;
+  boards_cta_build_text: string | null;
+  boards_cta_purist_text: string | null;
+  boards_cta_classics_text: string | null;
   bottle_title: string | null;
   bottle_description: string | null;
   bottle_placeholder_url: string | null;
   testimonials_enabled: boolean;
   testimonial_quote: string | null;
   testimonial_author: string | null;
+  apparel_title: string | null;
+  apparel_empty_text: string | null;
+  more_title: string | null;
+  more_body: string | null;
 };
 
 export default function HomePage() {
@@ -33,7 +49,7 @@ export default function HomePage() {
         const { data, error } = await supabase
           .from("homepage_settings")
           .select(
-            "promo_enabled, promo_text, hero_title, hero_subtitle, boards_title, boards_description, boards_placeholder_url, bottle_title, bottle_description, bottle_placeholder_url, testimonials_enabled, testimonial_quote, testimonial_author"
+            "promo_enabled, promo_text, hero_title, hero_subtitle, home_hero_url, hero_cta_primary_text, hero_cta_primary_href, hero_cta_secondary_text, hero_cta_secondary_href, hero_feature_1, hero_feature_2, hero_feature_3, boards_title, boards_description, boards_placeholder_url, boards_view_all_text, boards_cta_build_text, boards_cta_purist_text, boards_cta_classics_text, bottle_title, bottle_description, bottle_placeholder_url, testimonials_enabled, testimonial_quote, testimonial_author, apparel_title, apparel_empty_text, more_title, more_body"
           )
           .maybeSingle();
         if (!mounted) return;
@@ -93,44 +109,42 @@ export default function HomePage() {
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={() => router.push("/templates")}
+                  onClick={() => router.push(home?.hero_cta_primary_href || "/templates")}
                   className="inline-flex h-11 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  Build your board
+                  {home?.hero_cta_primary_text || "Build your board"}
                 </button>
-                <a
-                  href="#bottle-openers"
+                <button
+                  type="button"
+                  onClick={() => router.push(home?.hero_cta_secondary_href || "/boards")}
                   className="inline-flex h-11 px-5 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
                 >
-                  Shop bottle openers
-                </a>
+                  {home?.hero_cta_secondary_text || "Shop boards"}
+                </button>
               </div>
               <div className="flex items-center gap-4 pt-2 text-xs opacity-70">
                 <div className="inline-flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/></svg>
-                  Free shipping $75+
+                  {home?.hero_feature_1 || "Free shipping $75+"}
                 </div>
                 <div className="inline-flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
-                  Made in USA
+                  {home?.hero_feature_2 || "Made in USA"}
                 </div>
                 <div className="inline-flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4"><path d="M20 12H4"/><path d="M12 4v16"/></svg>
-                  Easy returns
+                  {home?.hero_feature_3 || "Easy returns"}
                 </div>
               </div>
             </div>
-            {/* Right: visual */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-200/40 to-emerald-500/30 dark:from-emerald-900/30 dark:to-emerald-700/20" aria-hidden />
-              <div className="relative h-full w-full aspect-[16/12] md:aspect-auto flex items-center justify-center text-emerald-900/70 dark:text-emerald-200/70 text-sm p-6 text-center">
-                {home?.testimonials_enabled && (home?.testimonial_quote || home?.testimonial_author) ? (
-                  <div>
-                    <div className="text-base md:text-lg italic">“{home?.testimonial_quote || ""}”</div>
-                    {home?.testimonial_author && <div className="mt-2 text-xs opacity-80">— {home.testimonial_author}</div>}
-                  </div>
+            {/* Right: home hero image */}
+            <div className="p-6 md:p-10">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+                {home?.home_hero_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={home.home_hero_url} alt="Home hero image" className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
-                  <span>Aesthetic testimonial (placeholder)</span>
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-200/40 to-emerald-500/30 dark:from-emerald-900/30 dark:to-emerald-700/20" aria-hidden />
                 )}
               </div>
             </div>
@@ -144,7 +158,7 @@ export default function HomePage() {
               onClick={() => router.push("/boards")}
               className="inline-flex h-9 px-3 rounded-md border border-black/15 dark:border-white/15 text-sm hover:bg-black/5 dark:hover:bg-white/10"
             >
-              View all
+              {home?.boards_view_all_text || "View all"}
             </button>
           </div>
           {/* Placeholder hero image */}
@@ -167,81 +181,33 @@ export default function HomePage() {
               onClick={() => router.push("/boards?collection=purist")}
               className="inline-flex h-11 px-5 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
             >
-              Purist
+              {home?.boards_cta_purist_text || "Purist"}
             </button>
             <button
               type="button"
               onClick={() => router.push("/boards?collection=classics")}
               className="inline-flex h-11 px-5 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
             >
-              Classics
+              {home?.boards_cta_classics_text || "Classics"}
             </button>
             <button
               type="button"
               onClick={() => router.push("/templates")}
               className="inline-flex h-11 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              Create your own
+              {home?.boards_cta_build_text || "Create your own"}
             </button>
             
           </div>
         </section>
 
-        <section id="bottle-openers" className="rounded-xl border border-black/10 dark:border-white/10 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">{home?.bottle_title || "Bottle Openers"}</h2>
-            <button
-              type="button"
-              onClick={() => router.push("/bottle-openers")}
-              className="inline-flex h-9 px-3 rounded-md border border-black/15 dark:border-white/15 text-sm hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              View all
-            </button>
-          </div>
-          {home?.bottle_description && (
-            <p className="text-sm opacity-80 mb-4">{home.bottle_description}</p>
-          )}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {[ 
-              { slug: "classic-steel-opener", name: "Classic Steel", price: "$24" },
-              { slug: "walnut-handle-opener", name: "Walnut Handle", price: "$32" },
-              { slug: "maple-brass-opener", name: "Maple + Brass", price: "$36" },
-              { slug: "pocket-keychain-opener", name: "Pocket Keychain", price: "$18" },
-              { slug: "magnetic-mount-opener", name: "Magnetic Mount", price: "$28" },
-              { slug: "limited-edition-opener", name: "Limited Edition", price: "$40" },
-            ].map((p) => (
-              <div key={p.slug} className="rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
-                <div className="h-28 bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10" aria-hidden />
-                <div className="p-3">
-                  <div className="text-sm font-medium truncate">{p.name}</div>
-                  <div className="text-xs opacity-70">{p.price}</div>
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/products/${p.slug}`)}
-                      className="inline-flex h-8 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/products/${p.slug}`)}
-                      className="inline-flex h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      Add to cart
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Bottle Openers removed per request */}
 
         {/* Apparel */}
         <section id="apparel" className="rounded-xl border border-black/10 dark:border-white/10 p-6">
-          <h2 className="text-xl font-semibold mb-4">Apparel</h2>
+          <h2 className="text-xl font-semibold mb-4">{home?.apparel_title || "Apparel"}</h2>
           {apparel.length === 0 ? (
-            <div className="text-sm opacity-70">No apparel products available.</div>
+            <div className="text-sm opacity-70">{home?.apparel_empty_text || "No apparel products available."}</div>
           ) : (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {apparel.map((p) => (
@@ -281,8 +247,8 @@ export default function HomePage() {
         </section>
 
         <section className="rounded-xl border border-dashed border-black/10 dark:border-white/10 p-6">
-          <h2 className="text-xl font-medium mb-2">More</h2>
-          <p className="text-sm opacity-70">More sections coming soon.</p>
+          <h2 className="text-xl font-medium mb-2">{home?.more_title || "More"}</h2>
+          <p className="text-sm opacity-70">{home?.more_body || "More sections coming soon."}</p>
         </section>
       </div>
       {/* Footer moved to global layout */}

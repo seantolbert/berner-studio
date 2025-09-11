@@ -3,46 +3,38 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AdminGuard from "@/app/admin/AdminGuard";
+import Button from "@/app/components/ui/Button";
 
 export default function AdminHomePage() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [primaryLabel, setPrimaryLabel] = useState("");
+  const [primaryHref, setPrimaryHref] = useState("");
+  const [secondaryLabel, setSecondaryLabel] = useState("");
+  const [secondaryHref, setSecondaryHref] = useState("");
   const [imgErr, setImgErr] = useState<string | null>(null);
-
-  // Promo
-  const [promoEnabled, setPromoEnabled] = useState(false);
-  const [promoText, setPromoText] = useState("");
-
-  // Hero copy + media
-  const [heroTitle, setHeroTitle] = useState("");
-  const [heroSubtitle, setHeroSubtitle] = useState("");
-  const [homeHeroUrl, setHomeHeroUrl] = useState("");
-
-  // Hero CTAs
-  const [heroCtaPrimaryText, setHeroCtaPrimaryText] = useState("");
-  const [heroCtaPrimaryHref, setHeroCtaPrimaryHref] = useState("");
-  const [heroCtaSecondaryText, setHeroCtaSecondaryText] = useState("");
-  const [heroCtaSecondaryHref, setHeroCtaSecondaryHref] = useState("");
 
   useEffect(() => {
     let aborted = false;
     (async () => {
       try {
-        const res = await fetch("/api/admin/home");
+        const res = await fetch("/api/admin/home-hero");
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to load settings");
+        if (!res.ok) throw new Error(data?.error || "Failed to load hero");
         if (aborted) return;
         const s = data?.item || {};
-        setPromoEnabled(Boolean(s.promo_enabled));
-        setPromoText(s.promo_text || "");
-        setHeroTitle(s.hero_title || "");
-        setHeroSubtitle(s.hero_subtitle || "");
-        setHomeHeroUrl(s.home_hero_url || "");
-        setHeroCtaPrimaryText(s.hero_cta_primary_text || "");
-        setHeroCtaPrimaryHref(s.hero_cta_primary_href || "");
-        setHeroCtaSecondaryText(s.hero_cta_secondary_text || "");
-        setHeroCtaSecondaryHref(s.hero_cta_secondary_href || "");
+        setTitle(s.title || "");
+        setSubtitle(s.subtitle || "");
+        setImageUrl(s.image_url || "");
+        setPrimaryLabel(s.primary_label || "");
+        setPrimaryHref(s.primary_href || "");
+        setSecondaryLabel(s.secondary_label || "");
+        setSecondaryHref(s.secondary_href || "");
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Unexpected error";
         setError(message);
@@ -50,26 +42,26 @@ export default function AdminHomePage() {
         setLoading(false);
       }
     })();
-    return () => { aborted = true; };
+    return () => {
+      aborted = true;
+    };
   }, []);
 
   async function save() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/home", {
+      const res = await fetch("/api/admin/home-hero", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promo_enabled: promoEnabled,
-          promo_text: promoText,
-          hero_title: heroTitle,
-          hero_subtitle: heroSubtitle,
-          home_hero_url: homeHeroUrl || null,
-          hero_cta_primary_text: heroCtaPrimaryText || null,
-          hero_cta_primary_href: heroCtaPrimaryHref || null,
-          hero_cta_secondary_text: heroCtaSecondaryText || null,
-          hero_cta_secondary_href: heroCtaSecondaryHref || null,
+          title: title || null,
+          subtitle: subtitle || null,
+          image_url: imageUrl || null,
+          primary_label: primaryLabel || null,
+          primary_href: primaryHref || null,
+          secondary_label: secondaryLabel || null,
+          secondary_href: secondaryHref || null,
         }),
       });
       const data = await res.json();
@@ -103,48 +95,28 @@ export default function AdminHomePage() {
                 </div>
               )}
 
-              {/* Promo Banner */}
-              <section className="rounded-lg border border-black/10 dark:border-white/10 p-4">
-                <div className="text-lg font-semibold mb-3">Promo Banner</div>
-                <label className="inline-flex items-center gap-2 text-sm mb-2">
-                  <input
-                    type="checkbox"
-                    checked={promoEnabled}
-                    onChange={(e) => setPromoEnabled(e.target.checked)}
-                  />
-                  Show banner
-                </label>
-                <input
-                  value={promoText}
-                  onChange={(e) => setPromoText(e.target.value)}
-                  placeholder="Free shipping $75+"
-                  className="w-full h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
-                />
-              </section>
-
-              {/* Hero */}
               <section className="rounded-lg border border-black/10 dark:border-white/10 p-4">
                 <div className="text-lg font-semibold mb-3">Hero</div>
                 <div className="grid md:grid-cols-2 gap-3">
                   <input
-                    value={heroTitle}
-                    onChange={(e) => setHeroTitle(e.target.value)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="Headline"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
                   />
                   <input
-                    value={heroSubtitle}
-                    onChange={(e) => setHeroSubtitle(e.target.value)}
-                    placeholder="Subheadline"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Subtext"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
                   />
                 </div>
 
                 <label className="flex flex-col gap-1 text-sm mt-3">
-                  <span>Home hero image URL</span>
+                  <span>Hero image URL</span>
                   <input
-                    value={homeHeroUrl}
-                    onChange={(e) => setHomeHeroUrl(e.target.value)}
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
                     placeholder="https://…"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
                   />
@@ -165,12 +137,11 @@ export default function AdminHomePage() {
                         const up = await fetch("/api/admin/media/upload", { method: "POST", body: fd });
                         const data = await up.json();
                         if (!up.ok) throw new Error(data?.error || "Upload failed");
-                        setHomeHeroUrl(data.url);
-                        // Persist immediately to homepage settings
-                        await fetch("/api/admin/home", {
+                        setImageUrl(data.url);
+                        await fetch("/api/admin/home-hero", {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ home_hero_url: data.url }),
+                          body: JSON.stringify({ image_url: data.url }),
                         });
                         formEl.reset();
                       } catch (err: unknown) {
@@ -180,51 +151,47 @@ export default function AdminHomePage() {
                     }}
                   >
                     <input name="file" type="file" accept="image/*" className="text-sm" />
-                    <button className="h-8 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs ml-2" type="submit">
-                      Upload
-                    </button>
+                    <Button type="submit" variant="ghost" size="sm" className="ml-2">Upload</Button>
                   </form>
-                  {imgErr && <div className="text-xs text-red-600 dark:text-red-400">{imgErr}</div>}
+                  {imgErr && (
+                    <div className="text-xs text-red-600 dark:text-red-400">{imgErr}</div>
+                  )}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-3 mt-3">
                   <input
-                    value={heroCtaPrimaryText}
-                    onChange={(e) => setHeroCtaPrimaryText(e.target.value)}
+                    value={primaryLabel}
+                    onChange={(e) => setPrimaryLabel(e.target.value)}
                     placeholder="Primary button text"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
                   />
                   <input
-                    value={heroCtaPrimaryHref}
-                    onChange={(e) => setHeroCtaPrimaryHref(e.target.value)}
-                    placeholder="Primary button link (e.g., /templates)"
+                    value={primaryHref}
+                    onChange={(e) => setPrimaryHref(e.target.value)}
+                    placeholder="Primary button link (optional)"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
                   />
                 </div>
                 <div className="grid md:grid-cols-2 gap-3 mt-3">
                   <input
-                    value={heroCtaSecondaryText}
-                    onChange={(e) => setHeroCtaSecondaryText(e.target.value)}
+                    value={secondaryLabel}
+                    onChange={(e) => setSecondaryLabel(e.target.value)}
                     placeholder="Secondary button text"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
                   />
                   <input
-                    value={heroCtaSecondaryHref}
-                    onChange={(e) => setHeroCtaSecondaryHref(e.target.value)}
-                    placeholder="Secondary button link (e.g., /boards)"
+                    value={secondaryHref}
+                    onChange={(e) => setSecondaryHref(e.target.value)}
+                    placeholder="Secondary button link (optional)"
                     className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent text-sm"
                   />
                 </div>
               </section>
 
               <div className="flex items-center justify-end gap-2">
-                <button
-                  disabled={saving}
-                  onClick={save}
-                  className="h-9 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
-                >
-                  {saving ? "Saving…" : "Save Settings"}
-                </button>
+                <Button disabled={saving} onClick={save}>
+                  {saving ? "Saving…" : "Save"}
+                </Button>
               </div>
             </div>
           )}

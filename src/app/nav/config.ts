@@ -9,10 +9,7 @@ export type NavItem = {
 
 export const mainNav: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'Boards', href: '/boards' },
-  { label: 'Bottle Openers', href: '/bottle-openers' },
-  { label: 'Apparel', href: '/#apparel' },
+  { label: 'Products', href: '/products' },
   { label: 'Create Your Own', href: '/templates', cta: true },
   { label: 'Cart', href: '/cart' },
 ];
-

@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
     short_desc: z.string().nullable().optional(),
     long_desc: z.string().nullable().optional(),
     status: z.enum(["draft", "published", "archived"]).optional(),
+    collection: z.string().min(1).optional(),
+    tags: z.array(z.string().min(1)).optional(),
   });
   const jsonUnknown = await req.json().catch(() => undefined);
   const parsed = Body.safeParse(jsonUnknown);
@@ -52,6 +54,9 @@ export async function POST(req: NextRequest) {
   const short_desc = b.short_desc ?? null;
   const long_desc = b.long_desc ?? null;
   const status = b.status ?? "draft";
+  let tags: string[] | undefined = undefined;
+  if (Array.isArray(b.tags)) tags = b.tags;
+  if (b.collection) tags = Array.from(new Set([...(tags || []), b.collection]));
 
   if (!name || !slug || !category) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
 
@@ -60,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await adminSupabase
     .from("products")
-    .insert({ name, slug, price_cents, category, short_desc, long_desc, status })
+    .insert({ name, slug, price_cents, category, short_desc, long_desc, status, ...(tags ? { tags } : {}) })
     .select("id, slug")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

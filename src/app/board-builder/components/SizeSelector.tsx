@@ -36,8 +36,8 @@ export default function SizeSelector({ selected, onSelect }: Props) {
   );
 
   return (
-    <section className="rounded-md bg-black/[.03] dark:bg-white/[.06] h-full w-full flex items-center justify-center">
-      <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-2">
+    <section className="rounded-md bg-black/[.03] dark:bg-white/[.06] h-full w-full flex items-stretch justify-start">
+      <div className="w-full flex flex-col items-center justify-start gap-4 p-2">
         <h5 className="text-sm font-semibold uppercase tracking-wide">size</h5>
 
         <div className="w-full flex flex-col gap-3">

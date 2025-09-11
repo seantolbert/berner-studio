@@ -103,121 +103,6 @@ export default function BoardPreview({
               ) => onRowTransitionEnd(idx, e);
               return (
                 <div key={i} className="relative w-full flex items-center justify-center">
-                  {(() => {
-                    if (!interactive) return null;
-                    const active = selectedRow === i;
-                    const reflected = !!rowObj?.reflected;
-                    const bgText = reflected
-                      ? "bg-white text-black"
-                      : "bg-white/80 dark:bg-black/40";
-                    const isLatterHalf =
-                      i >= Math.ceil((effectiveOrder?.length || 0) / 2);
-                    return (
-                      <div
-                        className={`absolute left-2 top-1/2 -translate-y-1/2 transition-all duration-300 ease-in-out ${
-                          active
-                            ? "opacity-100 translate-x-0 z-20"
-                            : "opacity-0 translate-x-6 pointer-events-none z-10"
-                        }`}
-                      >
-                        {/* Reverse button */}
-                        <button
-                          type="button"
-                          aria-label="Reverse row"
-                          title="Reverse row"
-                          onClick={() => {
-                            if (onReverseRow) onReverseRow(i);
-                          }}
-                          className={`h-8 w-8 rounded-full border border-black/15 dark:border-white/15 ${bgText} backdrop-blur flex items-center justify-center shadow-sm`}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <path d="M3 12h18" />
-                            <path d="M7 8l-4 4 4 4" />
-                            <path d="M17 16l4-4-4-4" />
-                          </svg>
-                        </button>
-
-                        {/* Strip changer menu */}
-                        {active && (
-                          <div
-                            className={`${
-                              isLatterHalf
-                                ? "bottom-full mb-1"
-                                : "top-full mt-1"
-                            } absolute left-0 w-12 rounded-md border border-black/15 dark:border-white/15 bg-white/90 dark:bg-black/50 backdrop-blur shadow p-1.5`}
-                          >
-                            <div className="flex flex-col gap-3">
-                              <div>
-                                <div className="text-[8px] text-center font-semibold uppercase text-foreground/80">
-                                  Change
-                                </div>
-                                <div className="text-[8px] text-center font-semibold uppercase text-foreground/80">
-                                  strip
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => onChangeRowStrip?.(i, 1)}
-                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[14px] hover:bg-black/5 dark:hover:bg-white/10"
-                              >
-                                1
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onChangeRowStrip?.(i, 2)}
-                                className="h-6 rounded border border-black/15 dark:border-white/15 text-[14px] hover:bg-black/5 dark:hover:bg-white/10"
-                              >
-                                2
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!strip3Enabled) return;
-                                  onChangeRowStrip?.(i, 3);
-                                }}
-                                disabled={!strip3Enabled}
-                                aria-disabled={!strip3Enabled}
-                                className={`relative h-6 rounded border border-black/15 dark:border-white/15 text-[14px] ${
-                                  strip3Enabled
-                                    ? "hover:bg-black/5 dark:hover:bg-white/10"
-                                    : "opacity-50 cursor-not-allowed"
-                                }`}
-                              >
-                                3
-                                {!strip3Enabled && (
-                                  <svg
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute inset-0"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <line
-                                      x1="4"
-                                      y1="20"
-                                      x2="20"
-                                      y2="4"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
                   <div className="relative inline-block">
                     <PreviewRow
                       index={i}
@@ -243,6 +128,79 @@ export default function BoardPreview({
             })}
           </div>
         </div>
+
+        {interactive && !minimal && (
+          <div
+            className={`absolute left-2 top-1/2 -translate-y-1/2 z-30 transform transition-all duration-300 ease-in-out ${
+              selectedRow != null
+                ? "opacity-100 translate-x-0"
+                : "opacity-0 -translate-x-6 pointer-events-none"
+            }`}
+          >
+            <div className="w-12 rounded-md border border-black/15 dark:border-white/15 bg-white/90 dark:bg-black/50 backdrop-blur shadow p-1.5">
+              <div className="flex flex-col items-stretch gap-2">
+                <button
+                  type="button"
+                  aria-label="Reverse row"
+                  title={selectedRow != null ? "Reverse row" : "Select a row to reverse"}
+                  onClick={() => {
+                    if (selectedRow != null && typeof onReverseRow === "function") onReverseRow(selectedRow);
+                  }}
+                  disabled={selectedRow == null}
+                  className={`inline-flex items-center justify-center h-7 w-7 rounded-md border border-black/15 dark:border-white/15 shadow ${
+                    selectedRow != null ? "bg-white/80 dark:bg-black/40 hover:bg-black/5 dark:hover:bg-white/10" : "opacity-50 cursor-not-allowed bg-white/60 dark:bg-black/20"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 12h18" />
+                    <path d="M7 8l-4 4 4 4" />
+                    <path d="M17 16l4-4-4-4" />
+                  </svg>
+                </button>
+
+                <div className="mt-1">
+                  <div className="text-[8px] text-center font-semibold uppercase text-foreground/80">Change</div>
+                  <div className="text-[8px] text-center font-semibold uppercase text-foreground/80">strip</div>
+                </div>
+                {[1,2,3].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => {
+                      if (selectedRow == null) return;
+                      if (n === 3 && !strip3Enabled) return;
+                      onChangeRowStrip?.(selectedRow, n);
+                    }}
+                    disabled={selectedRow == null || (n === 3 && !strip3Enabled)}
+                    aria-disabled={selectedRow == null || (n === 3 && !strip3Enabled)}
+                    className={`relative h-6 rounded border border-black/15 dark:border-white/15 text-[14px] ${
+                      selectedRow != null && (n !== 3 || strip3Enabled)
+                        ? "hover:bg-black/5 dark:hover:bg-white/10"
+                        : "opacity-50 cursor-not-allowed"
+                    }`}
+                  >
+                    {n}
+                    {n === 3 && !strip3Enabled && (
+                      <svg aria-hidden="true" className="pointer-events-none absolute inset-0" viewBox="0 0 24 24">
+                        <line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

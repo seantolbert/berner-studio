@@ -50,14 +50,25 @@ export const woodByKey: Record<string, Wood> = Object.fromEntries(
   WOODS.map((w) => [w.key, w])
 );
 
+// Dynamic override map populated from backend (builder_woods)
+let DYNAMIC_WOODS: Record<string, { color: string }> = {};
+export function setDynamicWoods(list: Array<{ key: string; color: string }>) {
+  const next: Record<string, { color: string }> = {};
+  for (const it of list) {
+    if (it?.key && it?.color) next[it.key] = { color: it.color };
+  }
+  DYNAMIC_WOODS = next;
+}
+
 export function styleForToken(token: string | null, cellPx: number): CSSProperties | undefined {
   if (!token) return undefined;
   // Prefer matching by wood key; fallback to color hex
   const byKey = woodByKey[token];
-  if (byKey) {
+  const dyn = DYNAMIC_WOODS[token];
+  if (dyn || byKey) {
     return {
-      backgroundColor: byKey.color,
-      ...(byKey.pattern ? byKey.pattern(cellPx) : {}),
+      backgroundColor: (dyn?.color || byKey?.color) as string,
+      ...(byKey?.pattern ? byKey.pattern(cellPx) : {}),
     } as CSSProperties;
   }
   const byColor = WOODS.find((w) => w.color === token);

@@ -52,7 +52,7 @@ export default function StripBuilder({
           strip3Enabled={strip3Enabled}
           onToggleStrip3={onToggleStrip3}
         />
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 md:hidden">
           {/* Price indicator replaces back button */}
           <div
             className="col-span-1 inline-flex items-center justify-between h-12 rounded-md border border-black/15 dark:border-white/15 bg-white/70 dark:bg-black/30 px-3"

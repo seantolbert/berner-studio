@@ -52,9 +52,7 @@ export default function Strips({
     const rowLabel = `row ${row + 1}`;
     open(
       <div className="flex flex-col gap-4">
-        <p className="text-sm">
-          Are you sure you want to clear {rowLabel}?
-        </p>
+        <p className="text-sm">Are you sure you want to clear {rowLabel}?</p>
         <button
           type="button"
           onClick={() => {
@@ -114,7 +112,7 @@ export default function Strips({
       {/* Cells scroller */}
       <div className="flex-1 w-px overflow-x-auto">
         <div
-          className={`h-full flex items-center justify-center min-w-max gap-x-1.25`}
+          className={`h-full flex items-center justify-center md:justify-start min-w-max gap-x-1.25`}
         >
           {(boardData.strips[row] ?? []).map((cellColor, i) => (
             <button
@@ -169,7 +167,7 @@ export default function Strips({
   );
 
   return (
-    <div className="relative rounded-lg h-full w-full p-3">
+    <div className="relative rounded-lg h-full w-full pb-3">
       <div className="grid grid-rows-3 gap-5">
         <StripRow row={0} />
         <StripRow row={1} />

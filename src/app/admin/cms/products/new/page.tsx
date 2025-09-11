@@ -27,6 +27,8 @@ export default function NewProductPage() {
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
   const [status, setStatus] = useState("draft");
+  const [collection, setCollection] = useState<string>("");
+  const [collections, setCollections] = useState<Array<{ id: string; label: string; href: string | null }>>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imgAlt, setImgAlt] = useState("");
@@ -39,6 +41,36 @@ export default function NewProductPage() {
       previewUrls.forEach((u) => URL.revokeObjectURL(u));
     };
   }, [previewUrls]);
+
+  // Load available collections from home sections
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/home-sections");
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || "Failed to load sections");
+        const opts: Array<{ id: string; label: string; href: string | null }> = [];
+        for (const s of (json.items || [])) {
+          for (const c of (s.collections || [])) {
+            opts.push({ id: c.id, label: c.label, href: c.href ?? null });
+          }
+        }
+        // unique by label (case-insensitive)
+        const seen = new Set<string>();
+        const unique = opts.filter((o) => {
+          const key = (o.label || "").toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        if (!aborted) setCollections(unique);
+      } catch {}
+    })();
+    return () => {
+      aborted = true;
+    };
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +86,7 @@ export default function NewProductPage() {
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, price_cents, category, short_desc: shortDesc, long_desc: longDesc, status }),
+        body: JSON.stringify({ name, slug, price_cents, category, short_desc: shortDesc, long_desc: longDesc, status, collection: collection || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to create product");
@@ -166,6 +198,16 @@ export default function NewProductPage() {
                   <option value="published">Published</option>
                   <option value="archived">Archived</option>
                 </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Collection (optional)</span>
+                <select value={collection} onChange={(e)=>setCollection(e.target.value)} className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent">
+                  <option value="">None</option>
+                  {collections.map((c) => (
+                    <option key={c.id} value={c.label}>{c.label}</option>
+                  ))}
+                </select>
+                <span className="text-[11px] opacity-70">Collections are defined under Home CMS sections.</span>
               </label>
             </div>
 

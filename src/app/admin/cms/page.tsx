@@ -13,6 +13,7 @@ export default function AdminCMSPage() {
     { href: "/admin/cms/about", label: "About" },
     { href: "/admin/cms/faq", label: "FAQ" },
     { href: "/admin/cms/gallery", label: "Gallery" },
+    { href: "/admin/cms/builder/pricing", label: "Builder Pricing" },
   ];
   return (
     <main className="min-h-screen w-full p-6">
@@ -29,9 +30,7 @@ export default function AdminCMSPage() {
               </Link>
             ))}
           </nav>
-          <div className="rounded-lg border border-black/10 dark:border-white/10 p-4 text-sm">
-            Choose a tab to manage products, media, or SEO settings.
-          </div>
+          <div className="rounded-lg border border-black/10 dark:border-white/10 p-4 text-sm">Choose a tab to manage products, media, SEO, or builder pricing.</div>
         </AdminGuard>
       </div>
     </main>

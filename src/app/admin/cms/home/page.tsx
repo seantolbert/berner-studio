@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import AdminGuard from "@/app/admin/AdminGuard";
 import Button from "@/app/components/ui/Button";
+import SectionsManager from "@/app/admin/cms/home/SectionsManager";
 
 export default function AdminHomePage() {
   const [loading, setLoading] = useState(true);
@@ -193,6 +194,9 @@ export default function AdminHomePage() {
                   {saving ? "Saving…" : "Save"}
                 </Button>
               </div>
+
+              {/* Sections manager */}
+              <SectionsManager />
             </div>
           )}
         </AdminGuard>

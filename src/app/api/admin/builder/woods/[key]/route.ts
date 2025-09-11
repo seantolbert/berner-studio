@@ -5,7 +5,7 @@ import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, { params }: { params: { key: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
@@ -19,6 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { key: strin
   if (!parsed.success)
     return NextResponse.json({ error: "Invalid body", issues: parsed.error.flatten() }, { status: 400 });
   const b = parsed.data;
+  const { key } = await params;
   const { error } = await adminSupabase
     .from("builder_woods")
     .update({
@@ -27,16 +28,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { key: strin
       ...(b.enabled !== undefined ? { enabled: b.enabled } : {}),
       ...(b.color !== undefined ? { color: b.color } : {}),
     })
-    .eq("key", params.key);
+    .eq("key", key);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { key: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ key: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const { error } = await adminSupabase.from("builder_woods").delete().eq("key", params.key);
+  const { key } = await params;
+  const { error } = await adminSupabase.from("builder_woods").delete().eq("key", key);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

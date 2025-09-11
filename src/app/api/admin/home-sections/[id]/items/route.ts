@@ -5,12 +5,12 @@ import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase)
     return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const sectionId = params.id;
+  const { id: sectionId } = await params;
   const Body = z.object({ product_ids: z.array(z.string().uuid()).min(1) });
   const parsed = Body.safeParse(await req.json().catch(() => undefined));
   if (!parsed.success)
@@ -29,4 +29,3 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
-

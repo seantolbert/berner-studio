@@ -5,12 +5,12 @@ import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase)
     return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const id = params.id;
+  const { id } = await params;
   const Body = z.object({
     title: z.string().min(1).optional(),
     subtext: z.string().nullable().optional(),
@@ -38,12 +38,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase)
     return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const id = params.id;
+  const { id } = await params;
   const { error } = await adminSupabase.from("home_sections").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

@@ -5,12 +5,12 @@ import { requireAdminBasicAuth } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase)
     return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const sectionId = params.id;
+  const { id: sectionId } = await params;
   const { data, error } = await adminSupabase
     .from("home_section_collections")
     .select("id,label,href,position")
@@ -20,12 +20,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ items: data || [] });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase)
     return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const sectionId = params.id;
+  const { id: sectionId } = await params;
   const Body = z.object({ label: z.string().min(1), href: z.string().nullable().optional() });
   const parsed = Body.safeParse(await req.json().catch(() => undefined));
   if (!parsed.success)
@@ -49,12 +49,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ id: data?.id });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase)
     return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
-  const sectionId = params.id;
+  const { id: sectionId } = await params;
   const Body = z.object({ ids: z.array(z.string().uuid()).min(1) });
   const parsed = Body.safeParse(await req.json().catch(() => undefined));
   if (!parsed.success)
@@ -71,4 +71,3 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   return NextResponse.json({ ok: true });
 }
-

@@ -3,21 +3,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { setDynamicWoods } from "./woods";
+import { formatCurrency } from "@/lib/money";
 
 type Props = {
   selectedKey: string | null;
   onSelect: (key: string) => void;
 };
 
-type DbWood = { key: string; name: string; price_per_stick: number; enabled: boolean; color: string | null };
+type DbWood = {
+  key: string;
+  name: string;
+  price_per_stick: number;
+  enabled: boolean;
+  color: string | null;
+};
 
 export default function AvailableWoods({ selectedKey, onSelect }: Props) {
   const [dbWoods, setDbWoods] = useState<DbWood[] | null>(null);
   const list = useMemo(() => {
     const items = (dbWoods || []).filter((w) => w.enabled);
-    // Feed dynamic colors to style system for previews/strips
-    setDynamicWoods(items.map((w) => ({ key: w.key, color: w.color || "" })));
-    return items.map((w) => ({ key: w.key, name: w.name, color: w.color || "#ccc" }));
+    return items.map((w) => ({ key: w.key, name: w.name, color: w.color || "#ccc", price: w.price_per_stick }));
+  }, [dbWoods]);
+
+  // Feed dynamic colors + prices to style/pricing, and notify listeners
+  useEffect(() => {
+    const items = (dbWoods || []).filter((w) => w.enabled);
+    setDynamicWoods(items.map((w) => ({ key: w.key, color: w.color || "", price: w.price_per_stick })));
+    if (typeof window !== "undefined") {
+      try {
+        window.dispatchEvent(new CustomEvent("builder:woods-updated"));
+      } catch {}
+    }
   }, [dbWoods]);
 
   useEffect(() => {
@@ -37,12 +53,14 @@ export default function AvailableWoods({ selectedKey, onSelect }: Props) {
   const selectedWood = list.find((w) => w.key === selectedKey);
 
   return (
-    <div className="relative w-full">
+    <div className=" w-full">
       {/* Header row: title left, selected name right */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">Available Woods</h3>
         <span className="text-xs font-medium text-foreground/80">
-          {selectedWood?.name || "\u00A0"}
+          {selectedWood
+            ? `${selectedWood.name} +${formatCurrency(selectedWood.price || 0)}`
+            : "\u00A0"}
         </span>
       </div>
 

@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import type { BoardTemplate } from "../templates";
-import { woodByKey } from "../board-builder/components/woods";
+import { styleForToken } from "../board-builder/components/woods";
 
 type Props = {
   template: BoardTemplate;
@@ -19,7 +19,7 @@ export default function TemplateButton({
     const cols = template.strips?.[0]?.length || 12;
     const order = template.order || [];
     const rows = order.length;
-    const cells: string[] = [];
+    const cells: React.CSSProperties[] = [];
 
     for (let r = 0; r < rows; r++) {
       const o = order[r];
@@ -37,8 +37,8 @@ export default function TemplateButton({
       ).slice(0, cols);
       for (let c = 0; c < cols; c++) {
         const key = rowKeys[c] ?? null;
-        const color = key ? woodByKey[key]?.color ?? "#ddd" : "#ddd";
-        cells.push(color);
+        const style = styleForToken(key, 5) || { backgroundColor: "#ddd" };
+        cells.push(style as React.CSSProperties);
       }
     }
     return { cells, cols };
@@ -65,13 +65,14 @@ export default function TemplateButton({
           }}
           aria-hidden
         >
-          {cells.map((bg, i) => (
-            <div key={i} style={{ width: 5, height: 5, background: bg }} />
+          {cells.map((cellStyle, i) => (
+            <div key={i} style={{ width: 5, height: 5, ...cellStyle }} />
           ))}
         </div>
 
-        {/* Meta (title removed by request) */}
+        {/* Title and meta */}
         <div className="w-full text-center">
+          <div className="text-sm font-medium truncate" title={template.name}>{template.name}</div>
           <div className="text-xs opacity-70">
             {template.size} • {template.strip3Enabled ? "3 strips" : "2 strips"}
           </div>

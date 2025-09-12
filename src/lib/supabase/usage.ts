@@ -37,13 +37,13 @@ export async function saveBoard({
 // Removed unused listBoards; add back if user-specific listing is needed.
 
 export async function listTemplates(): Promise<BoardTemplate[]> {
+  const normalizeSize = (s: string): "small" | "regular" | "large" =>
+    s === "small" || s === "regular" || s === "large" ? s : "regular";
   const { data, error } = await supabase
-    .from("templates")
+    .from("default_templates")
     .select('id, name, size, strip3_enabled, strips, "order"')
     .order("created_at", { ascending: true });
   if (error) throw error;
-  const normalizeSize = (s: string): "small" | "regular" | "large" =>
-    s === "small" || s === "regular" || s === "large" ? s : "regular";
   return (data ?? []).map((t: Record<string, unknown>) => ({
     id: String(t.id ?? ""),
     name: String(t.name ?? "Untitled"),
@@ -52,6 +52,29 @@ export async function listTemplates(): Promise<BoardTemplate[]> {
     strips: (Array.isArray((t as any).strips) ? (t as any).strips : []) as string[][],
     order: (Array.isArray((t as any).order) ? (t as any).order : []) as { stripNo: number; reflected: boolean }[],
   }));
+}
+
+export async function saveDefaultTemplate(args: {
+  name: string;
+  size: "small" | "regular" | "large";
+  strip3Enabled: boolean;
+  strips: (string | null)[][];
+  order: { stripNo: number; reflected: boolean }[];
+}) {
+  const payload = {
+    name: args.name,
+    size: args.size,
+    strip3_enabled: args.strip3Enabled,
+    strips: args.strips,
+    order: args.order,
+  };
+  const { data, error } = await supabase
+    .from("default_templates")
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function listMyBoardTemplates(): Promise<BoardTemplate[]> {

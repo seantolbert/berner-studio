@@ -7,11 +7,20 @@ import Strips from "./Strips";
 import { useModal } from "./modal/ModalProvider";
 
 type Props = {
-  boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
+  boardData: {
+    strips: (string | null)[][];
+    order: { stripNo: number; reflected: boolean }[];
+  };
   setBoardData: (
     updater:
-      | { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] }
-      | ((prev: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] }) => {
+      | {
+          strips: (string | null)[][];
+          order: { stripNo: number; reflected: boolean }[];
+        }
+      | ((prev: {
+          strips: (string | null)[][];
+          order: { stripNo: number; reflected: boolean }[];
+        }) => {
           strips: (string | null)[][];
           order: { stripNo: number; reflected: boolean }[];
         })
@@ -19,7 +28,7 @@ type Props = {
   strip3Enabled: boolean;
   onToggleStrip3: () => void;
   onConfirmComplete?: () => void;
-  pricing?: { total: number; cellCount: number };
+  pricing?: { total: number; cellCount: number; base: number; variable: number; extrasThirdStrip: number };
 };
 
 export default function StripBuilder({
@@ -55,8 +64,39 @@ export default function StripBuilder({
         <div className="grid grid-cols-3 gap-2 md:hidden">
           {/* Price indicator replaces back button */}
           <div
-            className="col-span-1 inline-flex items-center justify-between h-12 rounded-md border border-black/15 dark:border-white/15 bg-white/70 dark:bg-black/30 px-3"
+            className="col-span-1 inline-flex items-center justify-between h-12 rounded-md border border-black/15 dark:border-white/15 bg-white/70 dark:bg-black/30 px-3 active:scale-[.99]"
             aria-live="polite"
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              if (!pricing) return;
+              open(
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm opacity-70">Base</span>
+                    <span className="text-sm font-medium">{formatCurrency(pricing.base)}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm opacity-70">Sticks</span>
+                    <span className="text-sm font-medium">{formatCurrency(pricing.variable)}</span>
+                  </div>
+                  {pricing.extrasThirdStrip > 0 && (
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm opacity-70">3rd strip</span>
+                      <span className="text-sm font-medium">+{formatCurrency(pricing.extrasThirdStrip)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between border-t border-black/10 dark:border-white/10 pt-2">
+                    <span className="text-sm opacity-70">Total</span>
+                    <span className="text-base font-semibold">{formatCurrency(pricing.total)}</span>
+                  </div>
+                </div>,
+                { title: "Pricing Breakdown", size: "sm", dismissible: true }
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") (e.target as HTMLElement).click();
+            }}
           >
             <span className="text-xs text-black/60 dark:text-white/60">
               Total
@@ -64,9 +104,6 @@ export default function StripBuilder({
             <div className="flex items-baseline gap-2">
               <span className="text-base font-semibold tabular-nums">
                 {formatCurrency(pricing ? pricing.total : 0)}
-              </span>
-              <span className="text-[10px] text-black/50 dark:text-white/50">
-                {pricing ? pricing.cellCount : 0} cells
               </span>
             </div>
           </div>

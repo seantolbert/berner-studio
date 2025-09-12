@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { LS_SELECTED_TEMPLATE_KEY, type BoardTemplate } from "../templates";
+import { supabase } from "@/lib/supabase/client";
+import { setDynamicWoods } from "@/app/board-builder/components/woods";
 import { useRouter } from "next/navigation";
 import TemplateButton from "../components/TemplateButton";
 import { listTemplates, listMyBoardTemplates } from "@/lib/supabase/usage";
@@ -27,6 +29,25 @@ export default function TemplatesPage() {
     })();
     return () => {
       mounted = false;
+    };
+  }, []);
+  // Load available woods (colors) for correct preview rendering
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("builder_woods")
+          .select("key,color,enabled")
+          .eq("enabled", true)
+          .order("name", { ascending: true });
+        if (!cancelled && !error) {
+          setDynamicWoods((data || []).map((w: any) => ({ key: w.key, color: w.color || "" })));
+        }
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
     };
   }, []);
   useEffect(() => {

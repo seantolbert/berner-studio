@@ -53,7 +53,7 @@ export default function ControlPanel({
           <span className="text-xs opacity-80 leading-tight">Randomize</span>
         </div>
 
-        {/* Undo + Redo inline */}
+        {/* Undo */}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -82,6 +82,11 @@ export default function ControlPanel({
               <path d="M4 9h8a7 7 0 1 1 0 14H9" />
             </svg>
           </button>
+          <span className="text-xs opacity-80 leading-tight">Undo</span>
+        </div>
+
+        {/* Redo */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             aria-label="Redo"
@@ -109,65 +114,56 @@ export default function ControlPanel({
               <path d="M20 9h-8a7 7 0 1 0 0 14h3" />
             </svg>
           </button>
+          <span className="text-xs opacity-80 leading-tight">Redo</span>
         </div>
 
-        {/* Save */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Save"
-            title={canSave ? "Save" : "Complete the board to save"}
-            onClick={onSave}
-            disabled={!canSave || saving}
-            className={`h-12 w-12 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shadow-sm active:scale-[.98] ${
-              canSave && !saving
-                ? "bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10"
-                : "opacity-50 cursor-not-allowed bg-white/40 dark:bg-black/10"
-            }`}
-          >
-            {saving ? (
-              <svg
-                className="animate-spin h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
+        {/* Save (admin only when supplied) */}
+        {onSave && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Save template"
+              title={canSave ? "Save template" : "Complete the board to save"}
+              onClick={onSave}
+              disabled={!canSave || saving}
+              className={`h-12 w-12 rounded-full border border-black/15 dark:border-white/15 flex items-center justify-center shadow-sm active:scale-[.98] ${
+                canSave && !saving
+                  ? "bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10"
+                  : "opacity-50 cursor-not-allowed bg-white/40 dark:bg-black/10"
+              }`}
+            >
+              {saving ? (
+                <svg
+                  className="animate-spin h-6 w-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
                   stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6"
-                aria-hidden="true"
-              >
-                {/* Save icon (floppy) */}
-                <path d="M4 4h11l5 5v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
-                <path d="M13 4v6H6V4h7z" />
-                <path d="M6 18h12" />
-              </svg>
-            )}
-          </button>
-          <span className="text-xs opacity-80 leading-tight">Save</span>
-        </div>
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                  aria-hidden="true"
+                >
+                  <path d="M4 4h11l5 5v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                  <path d="M13 4v6H6V4h7z" />
+                  <path d="M6 18h12" />
+                </svg>
+              )}
+            </button>
+            <span className="text-xs opacity-80 leading-tight">Save</span>
+          </div>
+        )}
       </div>
     </section>
   );

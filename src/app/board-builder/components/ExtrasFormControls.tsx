@@ -66,8 +66,8 @@ export default function ExtrasFormControls({
 
   return (
     <div className="rounded-lg border border-black/10 dark:border-white/10 p-4 grid gap-4">
-      {/* Juice groove toggle */}
-      <div className="flex items-center justify-between">
+      {/* Juice groove toggle (hidden on mobile; shown on md+) */}
+      <div className="hidden md:flex items-center justify-between">
         <div>
           <div className="text-sm font-medium">Juice groove</div>
           <div className="text-xs opacity-70">Previewed as a black inset line</div>

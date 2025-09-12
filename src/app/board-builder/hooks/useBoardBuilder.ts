@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WOODS } from "../components/woods";
+import { WOODS, getAvailableWoodKeys } from "../components/woods";
 import type { RowOrder, Size } from "../components/preview/useRowDnD";
 import type { BoardTemplate } from "../../templates";
 
@@ -70,7 +70,8 @@ export function useBoardBuilder() {
   };
 
   const handleRandomize = () => {
-    const woodKeys = WOODS.map((w) => w.key);
+    const dynKeys = getAvailableWoodKeys();
+    const woodKeys = dynKeys.length > 0 ? dynKeys : WOODS.map((w) => w.key);
     const next = clone(boardData);
     next.strips = next.strips.map((row, ri): (string | null)[] => {
       const active = ri !== 2 || strip3Enabled;

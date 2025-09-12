@@ -50,7 +50,7 @@ export default function Drawer({
         aria-modal="true"
         aria-label="Builder Drawer"
         className={`fixed right-0 top-0 h-[100svh] w-1/3 bg-background text-foreground shadow-xl z-50 transform transition-transform duration-300 
-          md:relative md:right-auto md:top-auto md:h-full md:w-full md:max-w-[420px] md:translate-x-0 md:shadow-none md:col-start-2 md:row-span-1 md:bg-black md:text-white md:border md:border-white/10 md:rounded-md md:p-3
+          md:relative md:right-auto md:top-auto md:h-full md:w-full md:max-w-[420px] md:translate-x-0 md:shadow-none md:col-start-2 md:row-span-1
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >

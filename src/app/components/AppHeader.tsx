@@ -6,7 +6,6 @@ import { useState, useRef } from "react";
 import TopDrawer from "@/app/components/TopDrawer";
 import AuthButton from "@/app/components/AuthButton";
 import { mainNav } from "@/app/nav/config";
-import ThemeToggle from "@/app/components/ThemeToggle";
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -15,8 +14,8 @@ export default function AppHeader() {
   const menuBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const containerClass = isBuilder
-    ? "relative w-full border-b border-black/10 dark:border-white/10 bg-background"
-    : "sticky top-0 z-30 w-full border-b border-black/10 dark:border-white/10 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60";
+    ? "relative z-50 w-full border-b border-black/10 dark:border-white/10 bg-background"
+    : "sticky top-0 z-50 w-full border-b border-black/10 dark:border-white/10 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60";
 
   const isActive = (href: string) => href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
@@ -52,7 +51,6 @@ export default function AppHeader() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2">
-            <ThemeToggle />
             <AuthButton />
           </div>
           <button
@@ -77,9 +75,8 @@ export default function AppHeader() {
       {/* Mobile sheet */}
       <TopDrawer open={menuOpen} onOpenChange={setMenuOpen} title="Menu" returnFocusRef={menuBtnRef} id="top-drawer">
         <div className="p-4">
-          <div className="mb-3 pb-3 border-b border-black/10 dark:border-white/10 md:hidden flex items-center justify-between gap-2">
+          <div className="mb-3 pb-3 border-b border-black/10 dark:border-white/10 md:hidden flex items-center justify-end gap-2">
             <AuthButton />
-            <ThemeToggle />
           </div>
           <nav className="grid gap-2 text-sm" aria-label="Main">
             {mainNav.map((it, idx) => (

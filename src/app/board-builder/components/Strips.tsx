@@ -1,6 +1,8 @@
 "use client";
 
 import { styleForToken } from "./woods";
+import { PRICING_SSO } from "../pricing";
+import { formatCurrency } from "@/lib/money";
 import { useModal } from "./modal/ModalProvider";
 
 type Props = {
@@ -53,16 +55,31 @@ export default function Strips({
     open(
       <div className="flex flex-col gap-4">
         <p className="text-sm">Are you sure you want to clear {rowLabel}?</p>
-        <button
-          type="button"
-          onClick={() => {
-            clearRow(row);
-            close();
-          }}
-          className="inline-flex items-center justify-center h-9 px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 active:scale-[.99]"
-        >
-          Clear
-        </button>
+        <div className="flex items-center gap-2 justify-end">
+          {/* Secondary action: remove 3rd strip when clearing row 3 */}
+          {row === 2 && strip3Enabled && (
+            <button
+              type="button"
+              onClick={() => {
+                close();
+                onToggleStrip3();
+              }}
+              className="inline-flex h-9 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-sm"
+            >
+              Remove 3rd strip
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              clearRow(row);
+              close();
+            }}
+            className="inline-flex items-center justify-center h-9 px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 active:scale-[.99]"
+          >
+            Clear
+          </button>
+        </div>
       </div>,
       { title: "Confirm Clear", size: "sm", dismissible: true }
     );
@@ -180,7 +197,7 @@ export default function Strips({
             aria-label="Add a third strip"
             className="w-full h-8 inline-flex items-center justify-center rounded-sm border border-black/15 dark:border-white/15 bg-white/60 dark:bg-black/20 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-medium"
           >
-            Add a 3rd strip
+            {`Add a 3rd strip +${formatCurrency(PRICING_SSO.extras.thirdStrip || 0)}`}
           </button>
         )}
       </div>

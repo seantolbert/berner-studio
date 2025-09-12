@@ -9,10 +9,10 @@ import { useViewportHeight } from "@features/board-builder/hooks/useViewportHeig
 import { useBoardBuilder } from "@features/board-builder/hooks/useBoardBuilder";
 import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/ModalProvider";
 import { useRouter } from "next/navigation";
+import { useSupabaseUser } from "@/app/hooks/useSupabaseUser";
 import { LS_SELECTED_TEMPLATE_KEY } from "../templates";
-import { saveBoard } from "@/lib/supabase/usage";
-import { supabase } from "@/lib/supabase/client";
 import { calculateBoardPrice } from "@features/board-builder/lib/pricing";
+import { setRuntimePricing } from "./pricing";
 import { formatCurrency } from "@/lib/money";
 
 export default function BoardBuilderPage() {
@@ -39,8 +39,48 @@ export default function BoardBuilderPage() {
     resetToBlank,
   } = useBoardBuilder();
   const router = useRouter();
+  const { user } = useSupabaseUser();
+  const allowedAdmins = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = !!(user?.email && allowedAdmins.includes(user.email.toLowerCase()));
   const loadedRef = useRef(false);
   const [saving, setSaving] = useState(false);
+  const [woodsVersion, setWoodsVersion] = useState(0);
+  const [pricingVersion, setPricingVersion] = useState(0);
+
+  // Recalculate pricing when dynamic wood pricing updates
+  useEffect(() => {
+    const onUpdate = () => setWoodsVersion((v) => v + 1);
+    window.addEventListener("builder:woods-updated", onUpdate);
+    return () => window.removeEventListener("builder:woods-updated", onUpdate);
+  }, []);
+
+  // Load builder pricing settings from admin API and update runtime pricing
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/builder/pricing", { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load pricing");
+        const p = data?.item;
+        if (aborted || !p) return;
+        setRuntimePricing({
+          currency: p.currency,
+          cellPrice: p.cell_price,
+          basePrices: { small: p.base_small, regular: p.base_regular, large: p.base_large },
+          extras: { juiceGroove: p.extra_juice_groove, thirdStrip: p.extra_third_strip },
+        });
+        setPricingVersion((v) => v + 1);
+      } catch (e) {
+        // non-fatal: fallback to defaults
+        console.warn("Failed to load builder pricing; using defaults");
+      }
+    })();
+    return () => { aborted = true; };
+  }, []);
 
   const isBoardComplete = useMemo(() => {
     const requiredRows = strip3Enabled ? [0, 1, 2] : [0, 1];
@@ -53,31 +93,29 @@ export default function BoardBuilderPage() {
       strips: boardData.strips,
       strip3Enabled,
     });
-  }, [size, boardData.strips, strip3Enabled]);
+  }, [size, boardData.strips, strip3Enabled, woodsVersion, pricingVersion]);
 
   const handleSave = async () => {
-    if (!isBoardComplete || saving) return;
+    if (!isAdmin) {
+      alert("Only admins can save classic templates.");
+      return;
+    }
+    const name = prompt("Template name", "Classic Template");
+    if (!name) return;
     setSaving(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
-      if (!user) {
-        alert("Please sign in to save your board.");
-        return;
-      }
-      await saveBoard({
-        userId: user.id,
+      const { saveDefaultTemplate } = await import("@/lib/supabase/usage");
+      await saveDefaultTemplate({
+        name,
         size,
         strip3Enabled,
-        data: {
-          strips: boardData.strips,
-          order: boardData.order,
-        },
+        strips: boardData.strips,
+        order: boardData.order,
       });
-      alert("Board saved!");
+      alert("Template saved to Default Templates.");
     } catch (e: any) {
       console.error(e);
-      alert(e?.message || "Failed to save board");
+      alert(e?.message || "Failed to save template");
     } finally {
       setSaving(false);
     }
@@ -176,18 +214,44 @@ export default function BoardBuilderPage() {
             setBoardData={setBoardDataWithHistory}
             strip3Enabled={strip3Enabled}
             onToggleStrip3={toggleStrip3}
-            pricing={{ total: pricing.total, cellCount: pricing.cellCount }}
+            pricing={{
+              total: pricing.total,
+              cellCount: pricing.cellCount,
+              base: pricing.base,
+              variable: pricing.variable,
+              extrasThirdStrip: pricing.extrasThirdStrip,
+            }}
             onConfirmComplete={proceedToExtras}
           />
         </div>
 
         {/* Desktop-only price + continue panel aligned with strip builder */}
         <div className="hidden md:flex md:col-start-2 md:row-start-2 p-3">
-          <div className="w-full rounded-md border border-black/10 dark:border-white/10 p-3 flex items-center justify-between gap-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm opacity-70">Total</span>
-              <span className="text-lg font-semibold tabular-nums">{formatCurrency(pricing.total)}</span>
-              <span className="text-xs opacity-60">{pricing.cellCount} cells</span>
+          <div className="w-full rounded-md border border-black/10 dark:border-white/10 p-4 flex items-start justify-between gap-6">
+            <div className="w-full max-w-sm">
+              <div className="text-sm font-semibold mb-2">Receipt</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="opacity-70">Base</span>
+                  <span className="tabular-nums font-medium">{formatCurrency(pricing.base)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="opacity-70">Sticks</span>
+                  <span className="tabular-nums font-medium">{formatCurrency(pricing.variable)}</span>
+                </div>
+                {pricing.extrasThirdStrip > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="opacity-70">3rd strip</span>
+                    <span className="tabular-nums font-medium">+{formatCurrency(pricing.extrasThirdStrip)}</span>
+                  </div>
+                )}
+                <div className="h-px bg-black/10 dark:bg-white/10 my-2" />
+                <div className="flex items-center justify-between text-base font-semibold">
+                  <span>Total</span>
+                  <span className="tabular-nums">{formatCurrency(pricing.total)}</span>
+                </div>
+                <div className="text-xs opacity-60">{pricing.cellCount} cells</div>
+              </div>
             </div>
             <button
               type="button"
@@ -213,8 +277,8 @@ export default function BoardBuilderPage() {
           onRandomize={handleRandomize}
           size={size}
           onSelectSize={handleSelectSize}
-          onSave={handleSave}
-          canSave={isBoardComplete}
+          {...(isAdmin ? { onSave: handleSave } : {})}
+          canSave={isAdmin && isBoardComplete}
           saving={saving}
         />
         {/* Modal root mounted at page level */}

@@ -54,9 +54,8 @@ export default function UIPreviewPage() {
       </section>
 
       <footer className="pt-8 text-xs text-ink/60">
-        Tip: Try dark mode. Tokens adapt via system scheme.
+        Token-driven components preview.
       </footer>
     </div>
   );
 }
-

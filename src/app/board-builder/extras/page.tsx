@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 // Preview moved into PreviewPane for clarity
 import PreviewPane from "@features/board-builder/ui/PreviewPane";
 import { calculateBoardPrice, PRICING_SSO } from "@features/board-builder/lib/pricing";
+import { formatCurrency } from "@/lib/money";
 import { estimateBoardETA } from "@/lib/leadtime";
 import CostSummary from "@features/board-builder/ui/CostSummary";
 import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/ModalProvider";
@@ -104,12 +105,20 @@ export default function ExtrasPage() {
 
   // Preview constants are owned by PreviewPane/ExtrasFormControls now
 
+  // Persist current extras selections for later flows (desktop and mobile)
+  useEffect(() => {
+    try {
+      const extras = { edgeProfile, borderRadius, chamferSize, grooveEnabled };
+      localStorage.setItem("bs_extras", JSON.stringify(extras));
+    } catch {}
+  }, [edgeProfile, borderRadius, chamferSize, grooveEnabled]);
+
   return (
     <ModalProvider>
     <main className="w-full">
       {/* Top: left 50% preview, right 50% cost calculator */}
       <div className="w-full p-4">
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid [grid-template-columns:1fr_220px] md:[grid-template-columns:1fr_1fr] gap-4 items-start">
           <div className="w-full">
             <PreviewPane
               size={size}
@@ -119,9 +128,58 @@ export default function ExtrasPage() {
               chamferSize={chamferSize}
               grooveEnabled={grooveEnabled}
             />
+            {/* Desktop: stack extras form below preview on the left column */}
+            <div className="hidden md:block mt-4">
+              <h1 className="text-xl font-semibold mb-2">Extras</h1>
+              <p className="text-sm opacity-70 mb-4">Choose add-ons, engraving, and finishing options.</p>
+              <ExtrasFormControls
+                grooveEnabled={grooveEnabled}
+                setGrooveEnabled={setGrooveEnabled}
+                edgeProfile={edgeProfile}
+                setEdgeProfile={setEdgeProfile}
+                borderRadius={borderRadius}
+                setBorderRadius={setBorderRadius}
+                chamferSize={chamferSize}
+                setChamferSize={setChamferSize}
+                edgeOption={edgeOption}
+                setEdgeOption={setEdgeOption}
+                topRowColors={topRowColors}
+                cornerColors2x2={cornerColors2x2}
+              />
+            </div>
           </div>
           <div className="w-full">
-            <div className="rounded-lg border border-black/10 dark:border-white/10 p-4">
+            {/* Mobile: replace pricing card with juice groove toggle + description */}
+            <div className="md:hidden rounded-lg border border-black/10 dark:border-white/10 p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-base font-semibold">Juice groove</div>
+                <button
+                  type="button"
+                  aria-pressed={grooveEnabled}
+                  onClick={() => setGrooveEnabled((v) => !v)}
+                  className={`h-6 w-11 rounded-full border border-black/15 dark:border-white/15 relative transition-colors ${
+                    grooveEnabled ? "bg-emerald-600" : "bg-white/60 dark:bg-black/30"
+                  }`}
+                  aria-label="Toggle juice groove"
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      grooveEnabled ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+              <p className="mt-2 text-sm opacity-80">
+                A shallow channel around the edge that catches juices to help keep your countertop clean.
+              </p>
+              <div className="mt-2 text-sm font-medium">
+                Additional charge: +{formatCurrency(PRICING_SSO.extras.juiceGroove || 0)}
+              </div>
+            </div>
+
+            {/* Desktop: show pricing card */}
+            <div className="hidden md:block rounded-lg border border-black/10 dark:border-white/10 p-4">
               <div className="text-lg font-semibold mb-3">Cost</div>
               <CostSummary
                 base={basePricing.base}
@@ -132,31 +190,31 @@ export default function ExtrasPage() {
                 etaLabel={eta.label}
               />
               <div className="pt-3 flex justify-end">
-                  <AddToCartButton
-                    item={{
-                      name: "Custom cutting board",
-                      unitPriceCents: Math.round(grandTotal * 100),
-                      breakdown: {
-                        baseCents: Math.round(basePricing.base * 100),
-                        variableCents: Math.round(basePricing.variable * 100),
-                        extrasCents: Math.round(extrasTotal * 100),
-                      },
-                      config: {
-                        size,
-                        strip3Enabled,
-                        boardData,
-                        extras: { edgeProfile, borderRadius, chamferSize, grooveEnabled },
-                      },
-                    }}
-                  />
-                </div>
+                <AddToCartButton
+                  item={{
+                    name: "Custom cutting board",
+                    unitPriceCents: Math.round(grandTotal * 100),
+                    breakdown: {
+                      baseCents: Math.round(basePricing.base * 100),
+                      variableCents: Math.round(basePricing.variable * 100),
+                      extrasCents: Math.round(extrasTotal * 100),
+                    },
+                    config: {
+                      size,
+                      strip3Enabled,
+                      boardData,
+                      extras: { edgeProfile, borderRadius, chamferSize, grooveEnabled },
+                    },
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
+        </div>
 
-      {/* Extras form below */}
-      <div className="w-full p-4">
+      {/* Mobile-only: Extras form full width below */}
+      <div className="w-full p-4 md:hidden">
         <h1 className="text-xl font-semibold mb-2">Extras</h1>
         <p className="text-sm opacity-70 mb-4">
           Choose add-ons, engraving, and finishing options.
@@ -175,15 +233,6 @@ export default function ExtrasPage() {
           topRowColors={topRowColors}
           cornerColors2x2={cornerColors2x2}
         />
-
-        {/* Persist current extras selections for later flows */}
-        {(() => {
-          try {
-            const extras = { edgeProfile, borderRadius, chamferSize, grooveEnabled };
-            localStorage.setItem("bs_extras", JSON.stringify(extras));
-          } catch {}
-          return null;
-        })()}
       </div>
       <ModalRoot />
     </main>

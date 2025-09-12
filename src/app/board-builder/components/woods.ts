@@ -8,16 +8,7 @@ export type Wood = {
   pattern?: (cellPx: number) => CSSProperties;
 };
 
-const canaryPattern = (cellPx: number): CSSProperties => {
-  // Thicker diagonal grain bands over yellow
-  const band = Math.max(2, Math.round(cellPx / 3));
-  const spacing = Math.max(4, Math.round(cellPx / 1.5));
-  const lineColor = "rgba(90, 60, 20, 0.28)";
-  return {
-    backgroundImage: `repeating-linear-gradient(135deg, ${lineColor} 0px, ${lineColor} ${band}px, transparent ${band}px, transparent ${spacing}px)`,
-    backgroundBlendMode: "multiply",
-  } as const;
-};
+// Canarywood no longer uses a texture pattern
 
 const ambrosiaPattern = (cellPx: number): CSSProperties => {
   // Two crisp knots: dark brown and greenish-blue, no vertical lines
@@ -41,7 +32,7 @@ export const WOODS: Wood[] = [
   { key: "walnut", name: "Walnut", color: "#6B4F3A" },
   { key: "maple", name: "Maple", color: "#E8D6B6" },
   { key: "purpleheart", name: "Purple Heart", color: "#6E1E6A" },
-  { key: "canarywood", name: "Canarywood", color: "#D7A321", pattern: canaryPattern },
+  { key: "canarywood", name: "Canarywood", color: "#D7A321" },
   { key: "padauk", name: "Padauk", color: "#D24B1F" },
   { key: "ambrosia_maple", name: "Ambrosia Maple", color: "#E8D6B6", pattern: ambrosiaPattern },
 ];
@@ -51,13 +42,21 @@ export const woodByKey: Record<string, Wood> = Object.fromEntries(
 );
 
 // Dynamic override map populated from backend (builder_woods)
-let DYNAMIC_WOODS: Record<string, { color: string }> = {};
-export function setDynamicWoods(list: Array<{ key: string; color: string }>) {
-  const next: Record<string, { color: string }> = {};
+let DYNAMIC_WOODS: Record<string, { color: string; price?: number }> = {};
+let DYNAMIC_WOODS_VERSION = 0;
+export function setDynamicWoods(list: Array<{ key: string; color: string; price?: number }>) {
+  const next: Record<string, { color: string; price?: number }> = {};
   for (const it of list) {
-    if (it?.key && it?.color) next[it.key] = { color: it.color };
+    if (it?.key && it?.color) {
+      if (typeof it.price === "number") {
+        next[it.key] = { color: it.color, price: it.price };
+      } else {
+        next[it.key] = { color: it.color };
+      }
+    }
   }
   DYNAMIC_WOODS = next;
+  DYNAMIC_WOODS_VERSION += 1;
 }
 
 export function styleForToken(token: string | null, cellPx: number): CSSProperties | undefined {
@@ -79,4 +78,20 @@ export function styleForToken(token: string | null, cellPx: number): CSSProperti
     } as CSSProperties;
   }
   return { backgroundColor: token } as CSSProperties;
+}
+
+export function getPriceForToken(token: string | null): number | null {
+  if (!token) return null;
+  const dyn = DYNAMIC_WOODS[token];
+  if (dyn && typeof dyn.price === "number") return dyn.price;
+  return null;
+}
+
+export function getDynamicWoodsVersion(): number {
+  return DYNAMIC_WOODS_VERSION;
+}
+
+export function getAvailableWoodKeys(): string[] {
+  const keys = Object.keys(DYNAMIC_WOODS);
+  return keys;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import Link from "next/link";
 import { formatCurrencyCents } from "@/lib/money";
 
@@ -12,6 +13,7 @@ export type ProductItem = {
 };
 
 export default function ProductCard({ item }: { item: ProductItem }) {
+  const [loaded, setLoaded] = useState(false);
   return (
     <div className="rounded-md border border-black/10 dark:border-white/10 overflow-hidden">
       <Link
@@ -19,15 +21,19 @@ export default function ProductCard({ item }: { item: ProductItem }) {
         className="relative block h-44 bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10"
         aria-label={`View ${item.name}`}
       >
+        {/* Loading skeleton overlay */}
+        {item.primary_image_url && !loaded && <div className="skeleton-layer" />}
         {item.primary_image_url ? (
           <Image
             src={item.primary_image_url}
             alt={item.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover"
+            className="object-cover transition-opacity duration-300"
+            style={{ opacity: loaded ? 1 : 0 }}
             unoptimized
             priority={false}
+            onLoadingComplete={() => setLoaded(true)}
           />
         ) : (
           <span className="absolute inset-0 flex items-center justify-center text-xs opacity-70">
@@ -50,4 +56,3 @@ export default function ProductCard({ item }: { item: ProductItem }) {
     </div>
   );
 }
-

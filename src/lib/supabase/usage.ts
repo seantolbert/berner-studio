@@ -77,6 +77,34 @@ export async function saveDefaultTemplate(args: {
   return data;
 }
 
+export async function saveProductTemplate(args: {
+  name: string;
+  size: "small" | "regular" | "large";
+  strip3Enabled: boolean;
+  strips: (string | null)[][];
+  order: { stripNo: number; reflected: boolean }[];
+  productId?: string | null;
+}) {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+  const payload: any = {
+    name: args.name,
+    size: args.size,
+    strip3_enabled: args.strip3Enabled,
+    strips: args.strips,
+    order: args.order,
+  };
+  if (user?.id) payload.created_by = user.id;
+  if (args.productId) payload.product_id = args.productId;
+  const { data, error } = await supabase
+    .from("product_templates")
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function listMyBoardTemplates(): Promise<BoardTemplate[]> {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData?.user;

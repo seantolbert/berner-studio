@@ -8,12 +8,14 @@ import DrawerToggleTab from "@features/board-builder/ui/DrawerToggleTab";
 import { useViewportHeight } from "@features/board-builder/hooks/useViewportHeight";
 import { useBoardBuilder } from "@features/board-builder/hooks/useBoardBuilder";
 import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/ModalProvider";
+import { useModal } from "@/app/board-builder/components/modal/ModalProvider";
 import { useRouter } from "next/navigation";
 import { useSupabaseUser } from "@/app/hooks/useSupabaseUser";
 import { LS_SELECTED_TEMPLATE_KEY } from "../templates";
 import { calculateBoardPrice } from "@features/board-builder/lib/pricing";
 import { setRuntimePricing } from "./pricing";
 import { formatCurrency } from "@/lib/money";
+ 
 
 export default function BoardBuilderPage() {
   const vh = useViewportHeight();
@@ -49,6 +51,7 @@ export default function BoardBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [woodsVersion, setWoodsVersion] = useState(0);
   const [pricingVersion, setPricingVersion] = useState(0);
+  
 
   // Recalculate pricing when dynamic wood pricing updates
   useEffect(() => {
@@ -62,7 +65,7 @@ export default function BoardBuilderPage() {
     let aborted = false;
     (async () => {
       try {
-        const res = await fetch("/api/admin/builder/pricing", { cache: "no-store" });
+        const res = await fetch("/api/builder/pricing", { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to load pricing");
         const p = data?.item;
@@ -95,30 +98,8 @@ export default function BoardBuilderPage() {
     });
   }, [size, boardData.strips, strip3Enabled, woodsVersion, pricingVersion]);
 
-  const handleSave = async () => {
-    if (!isAdmin) {
-      alert("Only admins can save classic templates.");
-      return;
-    }
-    const name = prompt("Template name", "Classic Template");
-    if (!name) return;
-    setSaving(true);
-    try {
-      const { saveDefaultTemplate } = await import("@/lib/supabase/usage");
-      await saveDefaultTemplate({
-        name,
-        size,
-        strip3Enabled,
-        strips: boardData.strips,
-        order: boardData.order,
-      });
-      alert("Template saved to Default Templates.");
-    } catch (e: any) {
-      console.error(e);
-      alert(e?.message || "Failed to save template");
-    } finally {
-      setSaving(false);
-    }
+  const handleSave = () => {
+    // Placeholder; actual save handler is injected by SaveTemplateController below
   };
 
   const proceedToExtras = () => {
@@ -267,23 +248,115 @@ export default function BoardBuilderPage() {
             </button>
           </div>
         </div>
-        <Drawer
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onRandomize={handleRandomize}
+        <SaveTemplateController
+          enabled={isAdmin}
           size={size}
-          onSelectSize={handleSelectSize}
-          {...(isAdmin ? { onSave: handleSave } : {})}
-          canSave={isAdmin && isBoardComplete}
-          saving={saving}
-        />
+          strip3Enabled={strip3Enabled}
+          strips={boardData.strips}
+          order={boardData.order}
+          onSaving={setSaving}
+        >
+          {(openSave) => (
+            <Drawer
+              isOpen={isOpen}
+              onClose={() => setIsOpen(false)}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onRandomize={handleRandomize}
+              size={size}
+              onSelectSize={handleSelectSize}
+              {...(isAdmin ? { onSave: openSave } : {})}
+              canSave={isAdmin && isBoardComplete}
+              saving={saving}
+            />
+          )}
+        </SaveTemplateController>
         {/* Modal root mounted at page level */}
         <ModalRoot />
       </main>
     </ModalProvider>
   );
+}
+
+function SaveTemplateModal({ initialName = "", onCancel, onSave }: { initialName?: string; onCancel: () => void; onSave: (dest: 'default' | 'product', name: string) => void }) {
+  const [name, setName] = useState(initialName);
+  const [dest, setDest] = useState<'default' | 'product'>('default');
+  const canSave = name.trim().length > 0;
+  return (
+    <form
+      onSubmit={(e) => { e.preventDefault(); if (canSave) onSave(dest, name.trim()); }}
+      className="space-y-4"
+    >
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Name</span>
+        <input value={name} onChange={(e)=>setName(e.target.value)} autoFocus className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent" />
+      </label>
+      <div className="text-sm">Save to</div>
+      <div className="flex items-center gap-4 text-sm">
+        <label className="inline-flex items-center gap-2">
+          <input type="radio" name="dest" checked={dest==='default'} onChange={()=>setDest('default')} />
+          Default templates
+        </label>
+        <label className="inline-flex items-center gap-2">
+          <input type="radio" name="dest" checked={dest==='product'} onChange={()=>setDest('product')} />
+          Product templates
+        </label>
+      </div>
+      <div className="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10">Cancel</button>
+        <button type="submit" disabled={!canSave} className="h-9 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50">Save</button>
+      </div>
+    </form>
+  );
+}
+
+function SaveTemplateController({
+  enabled,
+  size,
+  strip3Enabled,
+  strips,
+  order,
+  onSaving,
+  children,
+}: {
+  enabled: boolean;
+  size: "small" | "regular" | "large";
+  strip3Enabled: boolean;
+  strips: (string | null)[][];
+  order: { stripNo: number; reflected: boolean }[];
+  onSaving: (v: boolean) => void;
+  children: (openSave: () => void) => React.ReactNode;
+}) {
+  if (!enabled) return children(() => {});
+  const { open, close, setContent } = useModal();
+  const openSave = () => {
+    open(
+      <SaveTemplateModal
+        initialName="Classic Template"
+        onCancel={close}
+        onSave={async (dest, name) => {
+          onSaving(true);
+          try {
+            const { saveDefaultTemplate, saveProductTemplate } = await import("@/lib/supabase/usage");
+            if (dest === "default") {
+              await saveDefaultTemplate({ name, size, strip3Enabled, strips: strips as any, order });
+            } else {
+              await saveProductTemplate({ name, size, strip3Enabled, strips: strips as any, order });
+            }
+            setContent(<div className="text-sm">Saved to {dest === "default" ? "Default Templates" : "Product Templates"}.</div>);
+            setTimeout(() => close(), 900);
+          } catch (e: any) {
+            console.error(e);
+            setContent(<div className="text-sm text-red-600 dark:text-red-400">{e?.message || "Failed to save template"}</div>);
+          } finally {
+            onSaving(false);
+          }
+        }}
+      />,
+      { title: "Save template", size: "md" }
+    );
+  };
+  return <>{children(openSave)}</>;
 }

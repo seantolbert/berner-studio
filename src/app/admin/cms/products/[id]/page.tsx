@@ -24,6 +24,7 @@ type Product = {
   tags: string[];
   created_at: string;
   updated_at: string;
+  product_template_id?: string | null;
 };
 
 export default function EditProductPage() {
@@ -43,6 +44,8 @@ export default function EditProductPage() {
   const [status, setStatus] = useState("draft");
   const [primaryImage, setPrimaryImage] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
+  const [productTemplateId, setProductTemplateId] = useState<string | "" | null>(null);
+  const [templateOptions, setTemplateOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // SEO overrides
@@ -106,6 +109,7 @@ export default function EditProductPage() {
         setStatus(p.status);
         setPrimaryImage(p.primary_image_url || "");
         setTags(Array.isArray(p.tags) ? p.tags.map((t) => String(t)) : []);
+        setProductTemplateId(p.product_template_id || "");
         await refreshImages();
         // Load SEO overrides
         try {
@@ -152,6 +156,7 @@ export default function EditProductPage() {
           status,
           primary_image_url: primaryImage || null,
           tags,
+          product_template_id: productTemplateId ? productTemplateId : null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -194,6 +199,20 @@ export default function EditProductPage() {
     }
     setVariants(rows);
   }
+
+  // Load product templates for selection via admin API
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/product-templates`);
+        const data = await res.json();
+        if (!mounted) return;
+        if (res.ok) setTemplateOptions((data.items || []).map((t: any) => ({ id: t.id, name: t.name })));
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   function updateVariant(idx: number, partial: Partial<VariantRow>) {
     setVariants((prev) => prev.map((v, i) => (i === idx ? { ...v, ...partial } : v)));
@@ -296,6 +315,26 @@ export default function EditProductPage() {
                 </select>
               </label>
             </div>
+
+            {category === 'boards' && (
+              <div className="rounded-md border border-black/10 dark:border-white/10 p-3">
+                <div className="text-sm font-medium mb-2">Board Template</div>
+                <label className="flex items-center gap-2 text-sm">
+                  <span className="w-32 opacity-80">Assigned template</span>
+                  <select
+                    value={productTemplateId || ""}
+                    onChange={(e)=> setProductTemplateId(e.target.value)}
+                    className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent flex-1"
+                  >
+                    <option value="">— None —</option>
+                    {templateOptions.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="text-[11px] opacity-70 mt-1">Templates come from the Product Templates table. Use the builder Save action to add more.</div>
+              </div>
+            )}
 
             {/* Collections */}
             <div className="rounded-md border border-black/10 dark:border-white/10 p-3">

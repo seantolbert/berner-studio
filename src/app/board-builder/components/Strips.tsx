@@ -39,7 +39,7 @@ export default function Strips({
   const { open, close } = useModal();
 
   const clearRow = (row: number) => {
-    const cols = boardData.strips[row]?.length ?? 12;
+    const cols = boardData.strips[row]?.length ?? 13;
     const next = {
       strips: boardData.strips.map((r, ri) =>
         ri === row ? Array<string | null>(cols).fill(null) : r.slice()
@@ -137,7 +137,7 @@ export default function Strips({
               type="button"
               onClick={() => handlePaint(row, i)}
               className={`h-10 ${
-                (boardData.strips[row]?.length ?? 0) >= 14 ? "w-4" : "w-5"
+                (boardData.strips[row]?.length ?? 0) >= 13 ? "w-4" : "w-5"
               } rounded-sm border border-black/15 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 ${
                 cellColor ? "bg-transparent" : "bg-white/60 dark:bg-black/20"
               }`}
@@ -145,7 +145,7 @@ export default function Strips({
                 cellColor
                   ? styleForToken(
                       cellColor,
-                      (boardData.strips[row]?.length ?? 0) >= 14 ? 16 : 20
+                      (boardData.strips[row]?.length ?? 0) >= 13 ? 16 : 20
                     )
                   : undefined
               }

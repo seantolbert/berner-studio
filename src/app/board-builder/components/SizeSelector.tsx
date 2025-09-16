@@ -55,13 +55,7 @@ export default function SizeSelector({ selected, onSelect }: Props) {
               <div className="w-6 h-10 rounded-sm border-2 border-current" />
             }
           />
-          <Item
-            value="large"
-            label={'12" x 16"'}
-            shape={
-              <div className="w-8 h-12 rounded-sm border-2 border-current" />
-            }
-          />
+          {/** Large size option removed per request */}
         </div>
       </div>
     </section>

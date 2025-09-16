@@ -33,6 +33,7 @@ export default function ExtrasFormControls({
   setEdgeOption,
   topRowColors,
   cornerColors2x2,
+  bare = false,
 }: {
   grooveEnabled: boolean;
   setGrooveEnabled: (v: boolean | ((v: boolean) => boolean)) => void;
@@ -46,6 +47,7 @@ export default function ExtrasFormControls({
   setEdgeOption: (v: string) => void;
   topRowColors: (string | null)[];
   cornerColors2x2: (string | null)[][];
+  bare?: boolean;
 }) {
   // Reference to satisfy no-unused-vars for currently unused value
   void chamferSize;
@@ -64,8 +66,8 @@ export default function ExtrasFormControls({
     []
   );
 
-  return (
-    <div className="rounded-lg border border-black/10 dark:border-white/10 p-4 grid gap-4">
+  const content = (
+    <div className="grid gap-4">
       {/* Juice groove toggle (hidden on mobile; shown on md+) */}
       <div className="hidden md:flex items-center justify-between">
         <div>
@@ -193,6 +195,12 @@ export default function ExtrasFormControls({
           ))}
         </div>
       </div>
+    </div>
+  );
+  if (bare) return content;
+  return (
+    <div className="rounded-lg border border-black/10 dark:border-white/10 p-4">
+      {content}
     </div>
   );
 }

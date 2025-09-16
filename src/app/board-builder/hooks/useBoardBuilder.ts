@@ -14,8 +14,8 @@ export function useBoardBuilder() {
     strips: (string | null)[][];
     order: RowOrder[];
   }>(() => ({
-    strips: Array.from({ length: 3 }, () => Array<string | null>(12).fill(null)),
-    order: Array.from({ length: 14 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false })),
+    strips: Array.from({ length: 3 }, () => Array<string | null>(13).fill(null)),
+    order: Array.from({ length: 15 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false })),
   }));
 
   const clone = (d: { strips: (string | null)[][]; order: RowOrder[] }) => ({
@@ -82,7 +82,7 @@ export function useBoardBuilder() {
       return newRow;
     });
     const allowedStrips = strip3Enabled ? [1, 2, 3] : [1, 2];
-    const rowCount = next.order?.length ?? (size === "small" ? 10 : size === "regular" ? 14 : 16);
+    const rowCount = next.order?.length ?? (size === "small" ? 11 : size === "regular" ? 15 : 16);
     next.order = Array.from({ length: rowCount }, () => {
       const idx = Math.floor(Math.random() * allowedStrips.length);
       const picked = allowedStrips[idx] ?? 1;
@@ -101,11 +101,11 @@ export function useBoardBuilder() {
     // No third strip by default
     setStrip3Enabled(false);
     // Determine columns based on size
-    const cols = s === "large" ? 14 : 12;
+    const cols = s === "large" ? 14 : 13;
     const strips = Array.from({ length: 3 }, () => Array<string | null>(cols).fill(null));
     // Default order: alternating 1,2 with appropriate count
-    const countPerStrip = s === "small" ? 5 : s === "regular" ? 7 : 8;
-    const order: RowOrder[] = Array.from({ length: countPerStrip * 2 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
+    const rowsCount = s === "small" ? 11 : s === "regular" ? 15 : 16;
+    const order: RowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
 
     setBoardData({ strips, order });
     setHistory([]);
@@ -116,7 +116,7 @@ export function useBoardBuilder() {
   const loadTemplate = (tpl: BoardTemplate) => {
     // Use wood keys directly; ensure 3 rows exist
     const mappedStrips: (string | null)[][] = tpl.strips.map((row) => row.slice());
-    while (mappedStrips.length < 3) mappedStrips.push(Array<string | null>(mappedStrips[0]?.length || 12).fill(null));
+    while (mappedStrips.length < 3) mappedStrips.push(Array<string | null>(mappedStrips[0]?.length || 13).fill(null));
 
     setSize(tpl.size);
     setStrip3Enabled(tpl.strip3Enabled);
@@ -145,9 +145,9 @@ export function useBoardBuilder() {
   const handleSelectSize = (s: Size) => {
     setSize(s);
     if (s === "large") applyCols(14);
-    else applyCols(12);
-    const countPerStrip = s === "small" ? 5 : s === "regular" ? 7 : 8;
-    const newOrder: RowOrder[] = Array.from({ length: countPerStrip * 2 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
+    else applyCols(13);
+    const rowsCount = s === "small" ? 11 : s === "regular" ? 15 : 16;
+    const newOrder: RowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
     setBoardDataWithHistory((prev) => ({ ...clone(prev), order: newOrder }));
   };
 

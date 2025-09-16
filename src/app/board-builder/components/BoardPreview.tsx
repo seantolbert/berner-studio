@@ -30,7 +30,7 @@ export default function BoardPreview({
   // Reference optional props to satisfy no-unused-vars without altering behavior
   void _isDrawerOpen; // kept for potential future UI linkage
   void _onToggleDrawer;
-  const cols = boardData.strips[0]?.length ?? 12;
+  const cols = boardData.strips[0]?.length ?? 13;
   const cellPx = 12; // fixed square size in pixels
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [deselectingRows, setDeselectingRows] = useState<Set<number>>(
@@ -38,7 +38,7 @@ export default function BoardPreview({
   );
   const effectiveOrder = useMemo(() => {
     if (boardData.order && boardData.order.length) return boardData.order;
-    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
     return Array.from({ length: rows }, (_, i) => ({
       stripNo: i % 2 === 0 ? 1 : 2,
       reflected: false,

@@ -13,6 +13,9 @@ type Props = {
   grooveEnabled?: boolean;
   edgeProfile?: "square" | "chamfer" | "roundover";
   chamferSize?: number; // px size for 45° corner cut
+  // Optional overrides (e.g., product page schematic)
+  grooveBorderWidthPx?: number;
+  grooveCornerRadiusPx?: number;
 };
 
 // Minimal, non-interactive preview for the Extras page
@@ -25,13 +28,15 @@ export default function ExtrasPreview({
   grooveEnabled = false,
   edgeProfile = "square",
   chamferSize = 8,
+  grooveBorderWidthPx,
+  grooveCornerRadiusPx,
 }: Props) {
-  const cols = boardData.strips[0]?.length ?? 12;
+  const cols = boardData.strips[0]?.length ?? 13;
   const cellPx = 12; // square size in pixels
 
   const effectiveOrder = useMemo(() => {
     if (boardData.order && boardData.order.length) return boardData.order;
-    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
     return Array.from({ length: rows }, (_, i) => ({
       stripNo: i % 2 === 0 ? 1 : 2,
       reflected: false,
@@ -97,14 +102,16 @@ export default function ExtrasPreview({
         {/* Juice groove overlay */}
         {grooveEnabled && (
           <div
-            className="absolute pointer-events-none z-30"
+            className="absolute pointer-events-none z-30 mix-blend-multiply"
             style={{
               top: `${grooveInset}px`,
               left: `${grooveInset}px`,
               right: `${grooveInset}px`,
               bottom: `${grooveInset}px`,
-              border: "3px solid black",
-              borderRadius: grooveRadius,
+              borderRadius: typeof grooveCornerRadiusPx === 'number' ? grooveCornerRadiusPx : grooveRadius,
+              // Simulate a thicker groove using an inset box-shadow ring with filtered color
+              boxShadow: `inset 0 0 0 ${typeof grooveBorderWidthPx === 'number' ? grooveBorderWidthPx : 3}px rgba(0,0,0,0.4)`,
+              backgroundColor: 'transparent',
             }}
           />
         )}

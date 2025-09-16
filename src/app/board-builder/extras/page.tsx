@@ -50,8 +50,8 @@ export default function ExtrasPage() {
 
   // Derive top row colors from the same SSOT as the preview
   const topRowColors: (string | null)[] = useMemo(() => {
-    const cols = boardData.strips[0]?.length ?? 12;
-    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    const cols = boardData.strips[0]?.length ?? 13;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
     const effectiveOrder = (boardData.order && boardData.order.length
       ? boardData.order
       : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }))
@@ -64,8 +64,8 @@ export default function ExtrasPage() {
 
   // Top-left 2x2 corner colors from the same SSOT as preview
   const cornerColors2x2: (string | null)[][] = useMemo(() => {
-    const cols = boardData.strips[0]?.length ?? 12;
-    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    const cols = boardData.strips[0]?.length ?? 13;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
     const effectiveOrder = (boardData.order && boardData.order.length
       ? boardData.order
       : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }))

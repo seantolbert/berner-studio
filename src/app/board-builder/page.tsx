@@ -98,9 +98,7 @@ export default function BoardBuilderPage() {
     });
   }, [size, boardData.strips, strip3Enabled, woodsVersion, pricingVersion]);
 
-  const handleSave = () => {
-    // Placeholder; actual save handler is injected by SaveTemplateController below
-  };
+  // Save handled by SaveTemplateController injected into Drawer
 
   const proceedToExtras = () => {
     try {
@@ -114,7 +112,7 @@ export default function BoardBuilderPage() {
       };
       localStorage.setItem("bs_current_config", JSON.stringify(payload));
     } catch {}
-    router.push("/board-builder/extras");
+    router.push("/products/custom-end-grain-cutting-board");
   };
 
   // noop placeholder removed: handleChangeRowOrder

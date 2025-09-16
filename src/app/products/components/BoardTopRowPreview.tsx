@@ -16,6 +16,7 @@ type Props = {
   chamferSize?: number;
   edgeOption?: string;
   handleStyle?: "none" | "glide" | "lift";
+  showBrassFeet?: boolean;
 };
 
 export default function BoardTopRowPreview({
@@ -30,6 +31,7 @@ export default function BoardTopRowPreview({
   chamferSize = 8,
   edgeOption,
   handleStyle = "none",
+  showBrassFeet = false,
 }: Props) {
   const { colors, colCount } = useMemo(() => {
     const cols = strips[0]?.length ?? 12;
@@ -108,38 +110,69 @@ export default function BoardTopRowPreview({
   })();
 
   return (
-    <div className={`relative inline-block ${className}`} style={{ width: `${wPx}px`, height: `${hPx}px`, ...shapeStyle }}>
-      <div className="grid gap-0" style={gridStyle} aria-hidden>
-        {colors.map((c, i) => (
+    <div className={`relative inline-block ${className}`} style={{ width: `${wPx}px`, height: `${hPx}px` }}>
+      {/* Inner board area with edge shaping; allows brass feet to render outside */}
+      <div className="absolute inset-0" style={{ ...shapeStyle }}>
+        <div className="relative z-0 grid gap-0" style={gridStyle} aria-hidden>
+          {colors.map((c, i) => (
+            <div
+              key={i}
+              className="border border-black/10 dark:border-white/10"
+              style={{
+                width: `${cellPx}px`,
+                height: `${cellPx * 2}px`,
+                ...(typeof c === "string" ? styleForToken(c, cellPx) : { backgroundColor: "transparent" }),
+              }}
+            />
+          ))}
+        </div>
+        {handleStyle === "glide" && (
           <div
-            key={i}
-            className="border border-black/10 dark:border-white/10"
+            className="absolute z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none bg-black/40 mix-blend-multiply"
+            style={{ width: `${wPx * 0.6}px`, height: `${cellPx * 0.9}px` }}
+          />
+        )}
+        {handleStyle === "lift" && (
+          <div
+            className="absolute z-10 left-1/2 pointer-events-none bg-black/40 mix-blend-multiply"
             style={{
-              width: `${cellPx}px`,
-              height: `${cellPx * 2}px`,
-              ...(typeof c === "string" ? styleForToken(c, cellPx) : { backgroundColor: "transparent" }),
+              width: `${wPx * 0.6}px`,
+              height: `${cellPx * 0.9}px`,
+              bottom: 0,
+              transform: `translateX(-50%)`,
+              borderTopLeftRadius: 6,
+              borderTopRightRadius: 6,
             }}
           />
-        ))}
+        )}
       </div>
-      {handleStyle === "glide" && (
-        <div
-          className="absolute z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none bg-black/40 mix-blend-multiply"
-          style={{ width: `${wPx * 0.6}px`, height: `${cellPx * 0.9}px` }}
-        />
-      )}
-      {handleStyle === "lift" && (
-        <div
-          className="absolute z-10 left-1/2 pointer-events-none bg-black/40 mix-blend-multiply"
-          style={{
-            width: `${wPx * 0.6}px`,
-            height: `${cellPx * 0.9}px`,
-            bottom: 0,
-            transform: `translateX(-50%)`,
-            borderTopLeftRadius: 6,
-            borderTopRightRadius: 6,
-          }}
-        />
+      {showBrassFeet && (
+        <>
+          <div
+            className="absolute z-20 pointer-events-none"
+            style={{
+              left: 8,
+              bottom: -6,
+              width: Math.max(12, Math.round(cellPx * 1.2)),
+              height: 6,
+              background: '#d4af37',
+              borderRadius: 2,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.25)'
+            }}
+          />
+          <div
+            className="absolute z-20 pointer-events-none"
+            style={{
+              right: 8,
+              bottom: -6,
+              width: Math.max(12, Math.round(cellPx * 1.2)),
+              height: 6,
+              background: '#d4af37',
+              borderRadius: 2,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.25)'
+            }}
+          />
+        </>
       )}
       {/* Thickness dimension removed per request */}
     </div>

@@ -2,19 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useModal } from "../components/modal/ModalProvider";
-
-export type Size = "small" | "regular" | "large";
+import type { CartBreakdown, CartConfig } from "@/types/cart";
+import { createBoardPreviewDataUrl } from "@/lib/boardPreviewImage";
 
 export type CartSnapshot = {
   name: string;
   unitPriceCents: number;
-  breakdown: { baseCents: number; variableCents: number; extrasCents: number };
-  config: {
-    size: Size;
-    strip3Enabled: boolean;
-    boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
-    extras: { edgeProfile: "square" | "roundover" | "chamfer"; borderRadius: number; chamferSize: number; grooveEnabled: boolean };
-  };
+  breakdown: CartBreakdown;
+  config: CartConfig;
+  image?: string;
 };
 
 export default function AddToCartButton({ item }: { item: CartSnapshot }) {
@@ -24,17 +20,23 @@ export default function AddToCartButton({ item }: { item: CartSnapshot }) {
   const handleAdd = () => {
     try {
       const raw = localStorage.getItem("bs_cart");
-      type StoredLine = {
-        id: string;
-        name: string;
-        unitPrice: number;
-        quantity: number;
-        breakdown: CartSnapshot["breakdown"];
-        config: CartSnapshot["config"];
-      };
+type StoredLine = {
+  id: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  breakdown: CartSnapshot["breakdown"];
+  config: CartSnapshot["config"];
+  image?: string;
+};
       const arr: StoredLine[] = raw ? (JSON.parse(raw) as StoredLine[]) : [];
       const id = `cart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const line = { id, name: item.name, unitPrice: item.unitPriceCents, quantity: 1, breakdown: item.breakdown, config: item.config };
+      const image = createBoardPreviewDataUrl({
+        layout: item.config.boardData,
+        size: item.config.size,
+        extras: item.config.extras,
+      });
+      const line = { id, name: item.name, unitPrice: item.unitPriceCents, quantity: 1, breakdown: item.breakdown, config: item.config, image: item.image ?? image };
       const next = Array.isArray(arr) ? [...arr, line] : [line];
       localStorage.setItem("bs_cart", JSON.stringify(next));
     } catch {}

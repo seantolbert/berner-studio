@@ -5,26 +5,11 @@ import { formatCurrency } from "@/lib/money";
 import AvailableWoods from "./AvailableWoods";
 import Strips from "./Strips";
 import { useModal } from "./modal/ModalProvider";
+import type { BoardLayout } from "@/types/board";
 
 type Props = {
-  boardData: {
-    strips: (string | null)[][];
-    order: { stripNo: number; reflected: boolean }[];
-  };
-  setBoardData: (
-    updater:
-      | {
-          strips: (string | null)[][];
-          order: { stripNo: number; reflected: boolean }[];
-        }
-      | ((prev: {
-          strips: (string | null)[][];
-          order: { stripNo: number; reflected: boolean }[];
-        }) => {
-          strips: (string | null)[][];
-          order: { stripNo: number; reflected: boolean }[];
-        })
-  ) => void;
+  boardData: BoardLayout;
+  setBoardData: (updater: BoardLayout | ((prev: BoardLayout) => BoardLayout)) => void;
   strip3Enabled: boolean;
   onToggleStrip3: () => void;
   onConfirmComplete?: () => void;

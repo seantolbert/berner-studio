@@ -74,7 +74,11 @@ export default function BoardBuilderPage() {
           currency: p.currency,
           cellPrice: p.cell_price,
           basePrices: { small: p.base_small, regular: p.base_regular, large: p.base_large },
-          extras: { juiceGroove: p.extra_juice_groove, thirdStrip: p.extra_third_strip },
+          extras: {
+            juiceGroove: p.extra_juice_groove,
+            thirdStrip: p.extra_third_strip,
+            brassFeet: p.extra_brass_feet,
+          },
         });
         setPricingVersion((v) => v + 1);
       } catch (e) {
@@ -112,7 +116,7 @@ export default function BoardBuilderPage() {
       };
       localStorage.setItem("bs_current_config", JSON.stringify(payload));
     } catch {}
-    router.push("/products/custom-end-grain-cutting-board");
+    router.push("/board-builder/extras");
   };
 
   // noop placeholder removed: handleChangeRowOrder

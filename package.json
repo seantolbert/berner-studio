@@ -10,6 +10,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "knip": "knip --strict",
     "ts-prune": "ts-prune",
@@ -40,6 +42,7 @@
     "knip": "^5.63.1",
     "tailwindcss": "^4.1.13",
     "ts-prune": "^0.10.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "prettier": "^3.4.2"
   }
 }

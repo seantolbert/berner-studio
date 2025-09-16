@@ -12,6 +12,7 @@ export const PRICING_SSO = {
   extras: {
     juiceGroove: 20,
     thirdStrip: 0,
+    brassFeet: 0,
   },
 };
 
@@ -69,7 +70,7 @@ export function setRuntimePricing(patch: Partial<{
   currency: string;
   cellPrice: number;
   basePrices: Partial<Record<BoardSize, number>>;
-  extras: Partial<{ juiceGroove: number; thirdStrip: number }>;
+  extras: Partial<{ juiceGroove: number; thirdStrip: number; brassFeet: number }>;
 }>) {
   if (!patch || typeof patch !== "object") return;
   if (typeof patch.currency === "string" && patch.currency) {
@@ -82,6 +83,6 @@ export function setRuntimePricing(patch: Partial<{
     PRICING_SSO.basePrices = { ...PRICING_SSO.basePrices, ...patch.basePrices } as Record<BoardSize, number>;
   }
   if (patch.extras) {
-    PRICING_SSO.extras = { ...PRICING_SSO.extras, ...patch.extras } as any;
+    PRICING_SSO.extras = { ...PRICING_SSO.extras, ...patch.extras } as typeof PRICING_SSO.extras;
   }
 }

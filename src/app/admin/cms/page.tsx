@@ -14,6 +14,7 @@ export default function AdminCMSPage() {
     { href: "/admin/cms/faq", label: "FAQ" },
     { href: "/admin/cms/gallery", label: "Gallery" },
     { href: "/admin/cms/builder/pricing", label: "Builder Pricing" },
+    { href: "/admin/cms/builder/extras-images", label: "Builder Extras Images" },
   ];
   return (
     <main className="min-h-screen w-full p-6">

@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { LS_SELECTED_TEMPLATE_KEY, type BoardTemplate } from "../templates";
-import { supabase } from "@/lib/supabase/client";
 import { setDynamicWoods } from "@/app/board-builder/components/woods";
 import { useRouter } from "next/navigation";
 import TemplateButton from "../components/TemplateButton";
-import { listTemplates, listMyBoardTemplates } from "@/lib/supabase/usage";
+import { listTemplates, listMyBoardTemplates, listEnabledBuilderWoods } from "@/lib/supabase/usage";
 import { useSupabaseUser } from "@/app/hooks/useSupabaseUser";
 
 export default function TemplatesPage() {
@@ -22,9 +21,9 @@ export default function TemplatesPage() {
       try {
         const data = await listTemplates();
         if (mounted) setTemplates(data);
-      } catch (e: any) {
-        console.error(e);
-        if (mounted) setError(e?.message || "Failed to load templates");
+      } catch (error) {
+        console.error(error);
+        if (mounted) setError(error instanceof Error ? error.message : "Failed to load templates");
       }
     })();
     return () => {
@@ -36,15 +35,13 @@ export default function TemplatesPage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("builder_woods")
-          .select("key,color,enabled")
-          .eq("enabled", true)
-          .order("name", { ascending: true });
-        if (!cancelled && !error) {
-          setDynamicWoods((data || []).map((w: any) => ({ key: w.key, color: w.color || "" })));
+        const woods = await listEnabledBuilderWoods();
+        if (!cancelled) {
+          setDynamicWoods(woods.map((wood) => ({ key: wood.key, color: wood.color })));
         }
-      } catch {}
+      } catch (error) {
+        console.error(error);
+      }
     })();
     return () => {
       cancelled = true;
@@ -57,8 +54,8 @@ export default function TemplatesPage() {
       try {
         const mine = await listMyBoardTemplates();
         if (mounted) setMyTemplates(mine);
-      } catch (e: any) {
-        console.error(e);
+      } catch (error) {
+        console.error(error);
         if (mounted) setMyTemplates([]);
       }
     })();

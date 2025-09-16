@@ -2,14 +2,14 @@
 // Intent: provide helpful ETA messaging without backend complexity.
 
 import { countFilledCells } from "@/app/board-builder/pricing";
-
-export type Size = "small" | "regular" | "large";
+import type { BoardExtras, BoardLayout, BoardSize } from "@/types/board";
+import type { CartItem } from "@/types/cart";
 
 export type BoardConfig = {
-  size: Size;
+  size: BoardSize;
   strip3Enabled: boolean;
-  boardData?: { strips: (string | null)[][] };
-  extras?: { edgeProfile?: "square" | "roundover" | "chamfer"; chamferSize?: number; grooveEnabled?: boolean };
+  boardData?: Pick<BoardLayout, "strips">;
+  extras?: Partial<BoardExtras>;
 };
 
 export type EtaRange = {
@@ -20,7 +20,7 @@ export type EtaRange = {
   label: string;   // concise human-readable label
 };
 
-const BASE_PROD_DAYS: Record<Size, { min: number; max: number }> = {
+const BASE_PROD_DAYS: Record<BoardSize, { min: number; max: number }> = {
   small: { min: 3, max: 5 },
   regular: { min: 5, max: 7 },
   large: { min: 7, max: 10 },
@@ -99,14 +99,7 @@ export function estimateProductETA(today = new Date()): EtaRange {
   return { productionDays: { min: prodMin, max: prodMax }, shippingDays: { min: shipMin, max: shipMax }, startDate, endDate, label: formatEtaLabel(startDate, endDate) };
 }
 
-type CartItemETA = {
-  config?: {
-    size?: Size;
-    strip3Enabled?: boolean;
-    boardData?: { strips: (string | null)[][] };
-    extras?: { edgeProfile?: "square" | "roundover" | "chamfer"; chamferSize?: number; grooveEnabled?: boolean };
-  };
-};
+type CartItemETA = Pick<CartItem, "config">;
 
 export function estimateCartETA(items: CartItemETA[], today = new Date()): EtaRange | null {
   if (!Array.isArray(items) || items.length === 0) return null;
@@ -121,7 +114,7 @@ export function estimateCartETA(items: CartItemETA[], today = new Date()): EtaRa
       const eta = estimateBoardETA({
         size: it.config.size,
         strip3Enabled: Boolean(it.config.strip3Enabled),
-        ...(it.config.boardData ? { boardData: it.config.boardData } : {}),
+        ...(it.config.boardData ? { boardData: { strips: it.config.boardData.strips } } : {}),
         ...(it.config.extras ? { extras: it.config.extras } : {}),
       }, today);
       // For mixed carts, overall ETA is dominated by the slowest item

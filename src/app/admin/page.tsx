@@ -15,6 +15,7 @@ export default function AdminDashboardPage() {
     { title: "FAQ", desc: "Manage FAQs", href: "/admin/cms/faq" },
     { title: "Gallery", desc: "Manage gallery images", href: "/admin/cms/gallery" },
     { title: "Builder Pricing", desc: "Prices for board builder sizes and extras", href: "/admin/cms/builder/pricing" },
+    { title: "Builder Extras Images", desc: "Images used on the extras page", href: "/admin/cms/builder/extras-images" },
   ];
   const ops: Card[] = [
     { title: "Orders", desc: "View recent orders and payment status", href: "/admin/orders" },

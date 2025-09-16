@@ -4,21 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ExtrasPreview from "../board-builder/components/ExtrasPreview";
 import { formatCurrencyCents } from "@/lib/money";
-
-type Size = "small" | "regular" | "large";
-type CartItem = {
-  id: string;
-  name: string;
-  unitPrice: number; // cents
-  quantity: number;
-  breakdown?: { baseCents: number; variableCents: number; extrasCents: number };
-  config?: {
-    size: Size;
-    strip3Enabled: boolean;
-    boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
-    extras: { edgeProfile: "square" | "roundover" | "chamfer"; borderRadius: number; chamferSize: number; grooveEnabled: boolean };
-  };
-};
+import type { CartItem } from "@/types/cart";
 
 function formatUsd(cents: number) {
   return formatCurrencyCents(cents);
@@ -82,7 +68,10 @@ export default function CartPage() {
               {items.map((it) => (
                 <div key={it.id} className="flex gap-3 rounded-lg border border-black/10 dark:border-white/10 p-3 items-center">
                   <div className="h-16 w-16 rounded-md bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center" aria-hidden>
-                    {it.config ? (
+                    {it.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={it.image} alt="Board preview" className="h-full w-full object-cover" />
+                    ) : it.config ? (
                       <div style={{ transform: "scale(0.35)", transformOrigin: "top left" }}>
                         <ExtrasPreview
                           boardData={it.config.boardData}
@@ -105,6 +94,11 @@ export default function CartPage() {
                         {it.breakdown.extrasCents > 0 && (
                           <div>Extras: {formatUsd(it.breakdown.extrasCents)}</div>
                         )}
+                        {it.breakdown.extrasDetail?.map((detail) => (
+                          <div key={detail.label} className="pl-2">
+                            {detail.label}: {formatUsd(detail.amountCents)}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

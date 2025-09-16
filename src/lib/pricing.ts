@@ -1,21 +1,7 @@
 // Minimal, deterministic pricing utilities used on server and client.
 // Keep logic pure and independent of UI state.
 
-export type Size = "small" | "regular" | "large";
-
-export type CartItem = {
-  id: string;
-  name: string;
-  unitPrice: number; // cents
-  quantity: number;
-  breakdown?: { baseCents: number; variableCents: number; extrasCents: number };
-  config?: {
-    size: Size;
-    strip3Enabled: boolean;
-    boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
-    extras: { edgeProfile: "square" | "roundover" | "chamfer"; borderRadius: number; chamferSize: number; grooveEnabled: boolean };
-  };
-};
+import type { CartItem } from "@/types/cart";
 
 export type PricingInput = {
   items: CartItem[];

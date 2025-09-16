@@ -8,6 +8,7 @@ export default function CostSummary({
   variable,
   cellCount,
   juiceGrooveEnabled,
+  brassFeetEnabled = false,
   total,
   etaLabel,
 }: {
@@ -15,6 +16,7 @@ export default function CostSummary({
   variable: number;
   cellCount: number;
   juiceGrooveEnabled: boolean;
+  brassFeetEnabled?: boolean;
   total: number;
   etaLabel?: string;
 }) {
@@ -36,6 +38,12 @@ export default function CostSummary({
           <span>+{formatCurrency(PRICING_SSO.extras.juiceGroove)}</span>
         </div>
       )}
+      {brassFeetEnabled && (
+        <div className="flex justify-between">
+          <span>Brass feet</span>
+          <span>+{formatCurrency(PRICING_SSO.extras.brassFeet ?? 0)}</span>
+        </div>
+      )}
       <div className="border-t border-black/10 dark:border-white/10 my-2" />
       <div className="flex justify-between text-base font-medium">
         <span>Total</span>
@@ -45,4 +53,3 @@ export default function CostSummary({
     </div>
   );
 }
-

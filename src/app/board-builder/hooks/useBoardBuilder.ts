@@ -2,38 +2,34 @@
 
 import { useState } from "react";
 import { WOODS, getAvailableWoodKeys } from "../components/woods";
-import type { RowOrder, Size } from "../components/preview/useRowDnD";
+import type { Size } from "../components/preview/useRowDnD";
 import type { BoardTemplate } from "../../templates";
+import type { BoardLayout, BoardRowOrder } from "@/types/board";
 
 export function useBoardBuilder() {
   const [isOpen, setIsOpen] = useState(false);
   const [strip3Enabled, setStrip3Enabled] = useState(false);
   const [size, setSize] = useState<Size>("regular");
 
-  const [boardData, setBoardData] = useState<{
-    strips: (string | null)[][];
-    order: RowOrder[];
-  }>(() => ({
+  const [boardData, setBoardData] = useState<BoardLayout>(() => ({
     strips: Array.from({ length: 3 }, () => Array<string | null>(13).fill(null)),
     order: Array.from({ length: 15 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false })),
   }));
 
-  const clone = (d: { strips: (string | null)[][]; order: RowOrder[] }) => ({
-    strips: d.strips.map((r) => r.slice()),
-    order: d.order.map((o) => ({ ...o })),
+  const clone = (layout: BoardLayout): BoardLayout => ({
+    strips: layout.strips.map((r) => r.slice()),
+    order: layout.order.map((o) => ({ ...o })),
   });
 
-  const [history, setHistory] = useState<typeof boardData[]>([]);
-  const [future, setFuture] = useState<typeof boardData[]>([]);
+  const [history, setHistory] = useState<BoardLayout[]>([]);
+  const [future, setFuture] = useState<BoardLayout[]>([]);
 
-  const setBoardDataWithHistory = (
-    updater:
-      | typeof boardData
-      | ((prev: typeof boardData) => typeof boardData)
-  ) => {
+  type BoardUpdater = BoardLayout | ((prev: BoardLayout) => BoardLayout);
+
+  const setBoardDataWithHistory = (updater: BoardUpdater) => {
     setBoardData((prev) => {
       const prevClone = clone(prev);
-      const next = typeof updater === "function" ? (updater as any)(prev) : updater;
+      const next = typeof updater === "function" ? (updater as (prev: BoardLayout) => BoardLayout)(prev) : updater;
       setHistory((h) => [...h, prevClone]);
       setFuture([]);
       return next;
@@ -105,7 +101,7 @@ export function useBoardBuilder() {
     const strips = Array.from({ length: 3 }, () => Array<string | null>(cols).fill(null));
     // Default order: alternating 1,2 with appropriate count
     const rowsCount = s === "small" ? 11 : s === "regular" ? 15 : 16;
-    const order: RowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
+    const order: BoardRowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
 
     setBoardData({ strips, order });
     setHistory([]);
@@ -147,11 +143,11 @@ export function useBoardBuilder() {
     if (s === "large") applyCols(14);
     else applyCols(13);
     const rowsCount = s === "small" ? 11 : s === "regular" ? 15 : 16;
-    const newOrder: RowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
+    const newOrder: BoardRowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
     setBoardDataWithHistory((prev) => ({ ...clone(prev), order: newOrder }));
   };
 
-  const handleReorder = (nextOrder: RowOrder[]) => {
+  const handleReorder = (nextOrder: BoardRowOrder[]) => {
     setBoardDataWithHistory((prev) => {
       const next = clone(prev);
       next.order = nextOrder.map((o) => ({ ...o }));

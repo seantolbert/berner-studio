@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe, LinkAuthenticationElement } from "@stripe/react-stripe-js";
 import { NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY } from "@/lib/env";
-import { CartItem, priceCart } from "@/lib/pricing";
+import { priceCart } from "@/lib/pricing";
 import { estimateCartETA } from "@/lib/leadtime";
 import { formatCurrencyCents } from "@/lib/money";
+import type { CartItem } from "@/types/cart";
 
 const stripePromise = NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)

@@ -1,30 +1,66 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-// Preview moved into PreviewPane for clarity
-import PreviewPane from "@features/board-builder/ui/PreviewPane";
 import { calculateBoardPrice, PRICING_SSO } from "@features/board-builder/lib/pricing";
-import { formatCurrency } from "@/lib/money";
 import { estimateBoardETA } from "@/lib/leadtime";
 import CostSummary from "@features/board-builder/ui/CostSummary";
 import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/ModalProvider";
 import AddToCartButton from "@features/board-builder/ui/AddToCartButton";
-import ExtrasFormControls from "@features/board-builder/ui/ExtrasFormControls";
-
-type Size = "small" | "regular" | "large";
+import { ProductGallery } from "@/app/products/components/ProductGallery";
+import { BoardExtrasControls } from "@/app/products/components/BoardExtrasControls";
+import { BoardPreviewPanel } from "@/app/products/components/BoardPreviewPanel";
+import { createBoardPreviewDataUrl } from "@/lib/boardPreviewImage";
+import type { BoardExtras, BoardLayout, BoardRowOrder, BoardSize } from "@/types/board";
+import type { ProductImage } from "@/types/product";
 
 export default function ExtrasPage() {
-  const [size, setSize] = useState<Size>("regular");
+  const [size, setSize] = useState<BoardSize>("regular");
   const [strip3Enabled, setStrip3Enabled] = useState(false);
-  const [edgeProfile, setEdgeProfile] = useState<"square" | "chamfer" | "roundover">("square");
-  const [borderRadius, setBorderRadius] = useState<number>(0);
-  const [chamferSize, setChamferSize] = useState<number>(8);
+  const [edgeProfile, setEdgeProfile] = useState<BoardExtras["edgeProfile"]>("square");
+  const [borderRadius, setBorderRadius] = useState<BoardExtras["borderRadius"]>(0);
+  const [chamferSize, setChamferSize] = useState<BoardExtras["chamferSize"]>(8);
   const [edgeOption, setEdgeOption] = useState<string>("square");
-  const [grooveEnabled, setGrooveEnabled] = useState<boolean>(false);
-  const [boardData, setBoardData] = useState<{
-    strips: (string | null)[][];
-    order: { stripNo: number; reflected: boolean }[];
-  }>({ strips: [[], [], []], order: [] });
+  const [grooveEnabled, setGrooveEnabled] = useState<BoardExtras["grooveEnabled"]>(false);
+  const [boardData, setBoardData] = useState<BoardLayout>({ strips: [[], [], []], order: [] });
+  const [stripSampleOption, setStripSampleOption] = useState<"none" | "glide" | "lift">("none");
+  const [brassFeet, setBrassFeet] = useState(false);
+  const [extrasImages, setExtrasImages] = useState<Array<{ id: string; url: string; alt: string | null; is_primary: boolean; position: number }>>([]);
+  const [activeImageId, setActiveImageId] = useState<string | null>(null);
+
+  const handleEnabled = (opt: "none" | "glide" | "lift") => {
+    const eo = (edgeOption || "").toLowerCase();
+    if (eo === "double_chamfer") return opt === "none";
+    if (eo === "diamond" || eo === "flat_top") return opt !== "glide";
+    return true;
+  };
+
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/builder/extras-images", { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load extras images");
+        if (!aborted) setExtrasImages(data.items || []);
+      } catch {
+        if (!aborted) setExtrasImages([]);
+      }
+    })();
+    return () => {
+      aborted = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (extrasImages.length === 0) {
+      if (activeImageId !== null) setActiveImageId(null);
+      return;
+    }
+    if (!activeImageId || !extrasImages.some((img) => img.id === activeImageId)) {
+      const preferred = extrasImages.find((img) => img.is_primary) ?? extrasImages[0];
+      if (preferred?.id) setActiveImageId(preferred.id);
+    }
+  }, [extrasImages, activeImageId]);
 
   useEffect(() => {
     try {
@@ -40,36 +76,31 @@ export default function ExtrasPage() {
           order: parsed.boardData.order,
         });
       }
-      // no-op
-    } catch {
-      // no-op
-    }
+    } catch {}
   }, []);
 
-  // PreviewPane wraps ExtrasPreview with effective radius logic
-
-  // Derive top row colors from the same SSOT as the preview
-  const topRowColors: (string | null)[] = useMemo(() => {
+  const topRowColors = useMemo(() => {
     const cols = boardData.strips[0]?.length ?? 13;
     const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
-    const effectiveOrder = (boardData.order && boardData.order.length
-      ? boardData.order
-      : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }))
-    ) as { stripNo: number; reflected: boolean }[];
+    const fallbackOrder: BoardRowOrder[] = Array.from({ length: rows }, (_, i) => ({
+      stripNo: i % 2 === 0 ? 1 : 2,
+      reflected: false,
+    }));
+    const effectiveOrder = boardData.order.length ? boardData.order : fallbackOrder;
     const rowObj = effectiveOrder[0] || { stripNo: 1, reflected: false };
     const stripIndex = Math.max(0, Math.min(2, (rowObj.stripNo ?? 1) - 1));
     const rowColors = boardData.strips[stripIndex] ?? Array<string | null>(cols).fill(null);
     return rowObj.reflected ? rowColors.slice().reverse() : rowColors;
   }, [boardData, size]);
 
-  // Top-left 2x2 corner colors from the same SSOT as preview
-  const cornerColors2x2: (string | null)[][] = useMemo(() => {
+  const cornerColors2x2 = useMemo(() => {
     const cols = boardData.strips[0]?.length ?? 13;
     const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
-    const effectiveOrder = (boardData.order && boardData.order.length
-      ? boardData.order
-      : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }))
-    ) as { stripNo: number; reflected: boolean }[];
+    const fallbackOrder: BoardRowOrder[] = Array.from({ length: rows }, (_, i) => ({
+      stripNo: i % 2 === 0 ? 1 : 2,
+      reflected: false,
+    }));
+    const effectiveOrder = boardData.order.length ? boardData.order : fallbackOrder;
     const out: (string | null)[][] = [];
     for (let r = 0; r < 2; r++) {
       const rowObj = effectiveOrder[r] || { stripNo: 1, reflected: false };
@@ -81,58 +112,91 @@ export default function ExtrasPage() {
     return out;
   }, [boardData, size]);
 
-  // Edge options moved into ExtrasFormControls
-
-  // Pricing: carry cost from previous page and add extras
-  const basePricing = useMemo(() => {
-    return calculateBoardPrice({ size, strips: boardData.strips, strip3Enabled });
-  }, [size, boardData.strips, strip3Enabled]);
-
+  const basePricing = useMemo(() => calculateBoardPrice({ size, strips: boardData.strips, strip3Enabled }), [size, boardData.strips, strip3Enabled]);
   const extrasTotal = useMemo(() => {
-    let t = 0;
-    if (grooveEnabled) t += PRICING_SSO.extras.juiceGroove;
-    return t;
-  }, [grooveEnabled]);
+    let total = 0;
+    if (grooveEnabled) total += PRICING_SSO.extras.juiceGroove || 0;
+    if (brassFeet) total += PRICING_SSO.extras.brassFeet || 0;
+    return total;
+  }, [grooveEnabled, brassFeet]);
 
+  const extrasDetail = useMemo(() => {
+    const details: Array<{ label: string; amount: number }> = [];
+    if (grooveEnabled) details.push({ label: "Juice groove", amount: PRICING_SSO.extras.juiceGroove || 0 });
+    if (brassFeet) details.push({ label: "Brass feet", amount: PRICING_SSO.extras.brassFeet || 0 });
+    return details;
+  }, [grooveEnabled, brassFeet]);
   const grandTotal = basePricing.total + extrasTotal;
+  const eta = useMemo(
+    () => estimateBoardETA({ size, strip3Enabled, boardData, extras: { grooveEnabled, edgeProfile, chamferSize } }),
+    [size, strip3Enabled, boardData, grooveEnabled, edgeProfile, chamferSize]
+  );
 
-  const eta = useMemo(() => estimateBoardETA({
-    size,
-    strip3Enabled,
-    boardData,
-    extras: { grooveEnabled, edgeProfile, chamferSize },
-  }), [size, strip3Enabled, boardData, grooveEnabled, edgeProfile, chamferSize]);
-
-  // Preview constants are owned by PreviewPane/ExtrasFormControls now
-
-  // Persist current extras selections for later flows (desktop and mobile)
   useEffect(() => {
     try {
-      const extras = { edgeProfile, borderRadius, chamferSize, grooveEnabled };
+      const extras: BoardExtras = { edgeProfile, borderRadius, chamferSize, grooveEnabled };
       localStorage.setItem("bs_extras", JSON.stringify(extras));
     } catch {}
   }, [edgeProfile, borderRadius, chamferSize, grooveEnabled]);
 
+  useEffect(() => {
+    if (!handleEnabled(stripSampleOption)) {
+      setStripSampleOption("none");
+    }
+  }, [edgeOption]);
+
+  const galleryImages: ProductImage[] = useMemo(() => extrasImages.map((img) => ({ id: img.id, url: img.url, alt: img.alt ?? null, color: null })), [extrasImages]);
+  const fallbackGallery: ProductImage[] = useMemo(
+    () => [
+      { id: "placeholder", url: "/og.svg", alt: "Custom board preview", color: null },
+    ],
+    []
+  );
+  const hasUploadedImages = galleryImages.length > 0;
+  const displayGallery = hasUploadedImages ? galleryImages : fallbackGallery;
+  const fallbackImage = hasUploadedImages ? null : "/og.svg";
+  const activeImage = useMemo(() => {
+    if (activeImageId) {
+      const found = displayGallery.find((img) => img.id === activeImageId);
+      if (found) return found;
+    }
+    return displayGallery[0] ?? null;
+  }, [displayGallery, activeImageId]);
+
   return (
     <ModalProvider>
-    <main className="w-full">
-      {/* Top: left 50% preview, right 50% cost calculator */}
-      <div className="w-full p-4">
-        <div className="grid [grid-template-columns:1fr_220px] md:[grid-template-columns:1fr_1fr] gap-4 items-start">
-          <div className="w-full">
-            <PreviewPane
-              size={size}
-              boardData={boardData}
-              edgeProfile={edgeProfile}
-              borderRadius={borderRadius}
-              chamferSize={chamferSize}
-              grooveEnabled={grooveEnabled}
+      <main className="w-full overflow-x-hidden">
+        <div className="w-full p-4">
+          <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-2 items-start">
+            <ProductGallery
+              primary={activeImage}
+              fallbackImage={fallbackImage}
+              productName="Custom board"
+              gallery={displayGallery}
+              onSelectImage={(image) => setActiveImageId(image.id)}
             />
-            {/* Desktop: stack extras form below preview on the left column */}
-            <div className="hidden md:block mt-4">
-              <h1 className="text-xl font-semibold mb-2">Extras</h1>
-              <p className="text-sm opacity-70 mb-4">Choose add-ons, engraving, and finishing options.</p>
-              <ExtrasFormControls
+
+            <div className="space-y-4">
+              <div>
+                <h1 className="text-2xl font-semibold">Customize your board</h1>
+                <div className="text-xs opacity-70 mt-1">{eta.label}</div>
+              </div>
+
+              <BoardPreviewPanel
+                layout={boardData}
+                boardSize={size}
+                edgeProfile={edgeProfile}
+                borderRadius={borderRadius}
+                chamferSize={chamferSize}
+                grooveEnabled={grooveEnabled}
+                stripSampleOption={stripSampleOption}
+                brassFeet={brassFeet}
+                edgeOption={edgeOption}
+              />
+
+              <BoardExtrasControls
+                boardSize={size}
+                onBoardSizeChange={setSize}
                 grooveEnabled={grooveEnabled}
                 setGrooveEnabled={setGrooveEnabled}
                 edgeProfile={edgeProfile}
@@ -145,99 +209,84 @@ export default function ExtrasPage() {
                 setEdgeOption={setEdgeOption}
                 topRowColors={topRowColors}
                 cornerColors2x2={cornerColors2x2}
+                stripSampleOption={stripSampleOption}
+                setStripSampleOption={setStripSampleOption}
+                handleEnabled={handleEnabled}
+                brassFeet={brassFeet}
+                setBrassFeet={setBrassFeet}
+                showSizeControl={false}
               />
-            </div>
-          </div>
-          <div className="w-full">
-            {/* Mobile: replace pricing card with juice groove toggle + description */}
-            <div className="md:hidden rounded-lg border border-black/10 dark:border-white/10 p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-base font-semibold">Juice groove</div>
-                <button
-                  type="button"
-                  aria-pressed={grooveEnabled}
-                  onClick={() => setGrooveEnabled((v) => !v)}
-                  className={`h-6 w-11 rounded-full border border-black/15 dark:border-white/15 relative transition-colors ${
-                    grooveEnabled ? "bg-emerald-600" : "bg-white/60 dark:bg-black/30"
-                  }`}
-                  aria-label="Toggle juice groove"
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                      grooveEnabled ? "translate-x-5" : "translate-x-0.5"
-                    }`}
-                    aria-hidden="true"
-                  />
-                </button>
-              </div>
-              <p className="mt-2 text-sm opacity-80">
-                A shallow channel around the edge that catches juices to help keep your countertop clean.
-              </p>
-              <div className="mt-2 text-sm font-medium">
-                Additional charge: +{formatCurrency(PRICING_SSO.extras.juiceGroove || 0)}
-              </div>
-            </div>
 
-            {/* Desktop: show pricing card */}
-            <div className="hidden md:block rounded-lg border border-black/10 dark:border-white/10 p-4">
-              <div className="text-lg font-semibold mb-3">Cost</div>
-              <CostSummary
-                base={basePricing.base}
-                variable={basePricing.variable}
-                cellCount={basePricing.cellCount}
-                juiceGrooveEnabled={grooveEnabled}
-                total={grandTotal}
-                etaLabel={eta.label}
-              />
-              <div className="pt-3 flex justify-end">
-                <AddToCartButton
-                  item={{
-                    name: "Custom cutting board",
-                    unitPriceCents: Math.round(grandTotal * 100),
-                    breakdown: {
-                      baseCents: Math.round(basePricing.base * 100),
-                      variableCents: Math.round(basePricing.variable * 100),
-                      extrasCents: Math.round(extrasTotal * 100),
-                    },
-                    config: {
-                      size,
-                      strip3Enabled,
-                      boardData,
-                      extras: { edgeProfile, borderRadius, chamferSize, grooveEnabled },
-                    },
-                  }}
+              <div className="rounded-lg border border-black/10 dark:border-white/10 p-4">
+                <div className="text-lg font-semibold mb-3">Cost Summary</div>
+                <CostSummary
+                  base={basePricing.base}
+                  variable={basePricing.variable}
+                  cellCount={basePricing.cellCount}
+                  juiceGrooveEnabled={grooveEnabled}
+                  brassFeetEnabled={brassFeet}
+                  total={grandTotal}
+                  etaLabel={eta.label}
                 />
+                <div className="pt-3 flex justify-end">
+                  <AddToCartButton
+                    item={{
+                      name: "Custom cutting board",
+                      unitPriceCents: Math.round(grandTotal * 100),
+                      breakdown: {
+                        baseCents: Math.round(basePricing.base * 100),
+                        variableCents: Math.round(basePricing.variable * 100),
+                        extrasCents: Math.round(extrasTotal * 100),
+                        extrasDetail: extrasDetail.map((detail) => ({
+                          label: detail.label,
+                          amountCents: Math.round(detail.amount * 100),
+                        })),
+                      },
+                      config: {
+                        size,
+                        strip3Enabled,
+                        boardData,
+                        extras: { edgeProfile, borderRadius, chamferSize, grooveEnabled },
+                      },
+                      image: createBoardPreviewDataUrl({
+                        layout: boardData,
+                        size,
+                        extras: { edgeProfile, borderRadius, chamferSize, grooveEnabled },
+                      }),
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
-        </div>
 
-      {/* Mobile-only: Extras form full width below */}
-      <div className="w-full p-4 md:hidden">
-        <h1 className="text-xl font-semibold mb-2">Extras</h1>
-        <p className="text-sm opacity-70 mb-4">
-          Choose add-ons, engraving, and finishing options.
-        </p>
-        <ExtrasFormControls
-          grooveEnabled={grooveEnabled}
-          setGrooveEnabled={setGrooveEnabled}
-          edgeProfile={edgeProfile}
-          setEdgeProfile={setEdgeProfile}
-          borderRadius={borderRadius}
-          setBorderRadius={setBorderRadius}
-          chamferSize={chamferSize}
-          setChamferSize={setChamferSize}
-          edgeOption={edgeOption}
-          setEdgeOption={setEdgeOption}
-          topRowColors={topRowColors}
-          cornerColors2x2={cornerColors2x2}
-        />
-      </div>
-      <ModalRoot />
-    </main>
+        <div className="w-full p-4 md:hidden">
+          <BoardExtrasControls
+            boardSize={size}
+            onBoardSizeChange={setSize}
+            grooveEnabled={grooveEnabled}
+            setGrooveEnabled={setGrooveEnabled}
+            edgeProfile={edgeProfile}
+            setEdgeProfile={setEdgeProfile}
+            borderRadius={borderRadius}
+            setBorderRadius={setBorderRadius}
+            chamferSize={chamferSize}
+            setChamferSize={setChamferSize}
+            edgeOption={edgeOption}
+            setEdgeOption={setEdgeOption}
+            topRowColors={topRowColors}
+            cornerColors2x2={cornerColors2x2}
+            stripSampleOption={stripSampleOption}
+            setStripSampleOption={setStripSampleOption}
+            handleEnabled={handleEnabled}
+            brassFeet={brassFeet}
+            setBrassFeet={setBrassFeet}
+            showSizeControl={false}
+          />
+        </div>
+        <ModalRoot />
+      </main>
     </ModalProvider>
   );
 }
-
-// AddToCartButton extracted to ../components/AddToCartButton

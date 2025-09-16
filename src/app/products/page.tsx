@@ -2,12 +2,23 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
 import Image from "next/image";
 import { formatCurrencyCents } from "@/lib/money";
+import {
+  fetchProductSummaries,
+  fetchBoardCollections,
+} from "@/services/productsClient";
+import type { ProductSummary, ProductCategory, ProductSort } from "@/types/product";
 
-type Item = { slug: string; name: string; price_cents: number; primary_image_url: string | null };
-type ProductRow = { slug: string; name: string; price_cents: number; primary_image_url: string | null };
+function parseSort(value: string | null): ProductSort {
+  if (value === "price-asc" || value === "price-desc" || value === "newest") return value;
+  return "newest";
+}
+
+function parseCategory(value: string | null): ProductCategory {
+  if (value === "boards" || value === "bottle-openers" || value === "apparel") return value;
+  return "";
+}
 
 export default function ProductsPage() {
   return (
@@ -21,57 +32,38 @@ function ProductsContent() {
   const router = useRouter();
   const params = useSearchParams();
   const pathname = usePathname();
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sort, setSort] = useState<'newest'|'price-asc'|'price-desc'>(
-    (params?.get('sort') as any) || 'newest'
-  );
-  const [page, setPage] = useState<number>(Number(params?.get('page') || 1) || 1);
+  const [sort, setSort] = useState<ProductSort>(parseSort(params?.get("sort")));
+  const [page, setPage] = useState<number>(Number(params?.get("page") || 1) || 1);
   const pageSize = 12;
   const [total, setTotal] = useState<number | null>(null);
-  const [category, setCategory] = useState<''|'boards'|'bottle-openers'|'apparel'>(
-    ((params?.get('category') as any) || '') as any
+  const [category, setCategory] = useState<ProductCategory>(
+    parseCategory(params?.get("category"))
   );
-  const [collection, setCollection] = useState<string>((params?.get('collection') as any) || '');
+  const [collection, setCollection] = useState<string>(params?.get("collection") || "");
   const [boardCollections, setBoardCollections] = useState<string[]>([]);
 
   useEffect(() => {
-    let aborted = false;
-    (async () => {
-      try {
-        // Build base query with count for pagination
-        let query = supabase
-          .from("products")
-          .select("slug,name,price_cents,primary_image_url,status,deleted_at", { count: 'exact' })
-          .eq("status", "published")
-          .is("deleted_at", null);
-        if (category) query = query.eq('category', category);
-        if (category === 'boards' && collection) {
-          query = query.contains('tags', [collection]);
-        }
-        if (sort === 'newest') query = query.order('updated_at', { ascending: false });
-        if (sort === 'price-asc') query = query.order('price_cents', { ascending: true });
-        if (sort === 'price-desc') query = query.order('price_cents', { ascending: false });
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-        const { data, error, count } = await query.range(from, to);
-        if (!aborted && !error) {
-          const rows = ((data as unknown) as ProductRow[]) || [];
-          setItems(
-            rows.map((p) => ({
-              slug: p.slug,
-              name: p.name,
-              price_cents: p.price_cents,
-              primary_image_url: p.primary_image_url,
-            }))
-          );
-          setTotal(typeof count === 'number' ? count : null);
-        }
-      } finally {
-        if (!aborted) setLoading(false);
-      }
-    })();
-    return () => { aborted = true; };
+    let active = true;
+    setLoading(true);
+    fetchProductSummaries({ sort, page, pageSize, category, collection })
+      .then(({ items, total }) => {
+        if (!active) return;
+        setItems(items);
+        setTotal(total);
+      })
+      .catch(() => {
+        if (!active) return;
+        setItems([]);
+        setTotal(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [sort, page, category, collection]);
 
   // Keep filters in the URL (no full reload)
@@ -91,26 +83,23 @@ function ProductsContent() {
 
   // Load board collections (labels) from admin-defined Home sections with category 'boards'
   useEffect(() => {
-    if (category !== 'boards') { setBoardCollections([]); return; }
-    (async () => {
-      try {
-        const { data: secs } = await supabase
-          .from('home_sections')
-          .select('id,category')
-          .eq('category','boards');
-        const ids = (secs || []).map((s: any)=> s.id);
-        if (!ids.length) { setBoardCollections(['purist','classics']); return; }
-        const { data: cols } = await supabase
-          .from('home_section_collections')
-          .select('section_id,label,position')
-          .in('section_id', ids)
-          .order('position', { ascending: true });
-        const labels = Array.from(new Set(((cols||[]) as any[]).map(c=> (c.label as string).toLowerCase())));
-        setBoardCollections(labels.length ? labels : ['purist','classics']);
-      } catch {
-        setBoardCollections(['purist','classics']);
-      }
-    })();
+    if (category !== "boards") {
+      setBoardCollections([]);
+      return;
+    }
+    let active = true;
+    fetchBoardCollections()
+      .then((labels) => {
+        if (!active) return;
+        setBoardCollections(labels.length ? labels : ["purist", "classics"]);
+      })
+      .catch(() => {
+        if (!active) return;
+        setBoardCollections(["purist", "classics"]);
+      });
+    return () => {
+      active = false;
+    };
   }, [category]);
 
   return (
@@ -122,7 +111,10 @@ function ProductsContent() {
             <span className="opacity-70">Sort:</span>
             <select
               value={sort}
-              onChange={(e) => { setPage(1); setSort(e.target.value as any); }}
+              onChange={(event) => {
+                setPage(1);
+                setSort(parseSort(event.target.value));
+              }}
               className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
             >
               <option value="newest">Newest</option>

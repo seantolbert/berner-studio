@@ -395,39 +395,55 @@ export default function EditProductPage() {
                       setImgError(null);
                       try {
                         const formEl = e.currentTarget as HTMLFormElement;
-                        const fileInput = (formEl.elements.namedItem("file") as HTMLInputElement) || null;
-                        const file = fileInput?.files?.[0];
-                        if (!file) throw new Error("Choose a file");
-                        const fd = new FormData();
-                        fd.set("file", file);
-                        fd.set("slug", slug);
-                        const up = await fetch("/api/admin/media/upload", { method: "POST", body: fd });
-                        const upData = await up.json();
-                        if (!up.ok) throw new Error(upData?.error || "Upload failed");
-                        // Save to product_images
-                        const res = await fetch(`/api/admin/products/${id}/images`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ url: upData.url, alt: uploadAlt, is_primary: images.length === 0, color: uploadColor || null }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data?.error || "Failed to save image");
-                        setUploadAlt("");
-                        formEl.reset();
-                        await refreshImages();
-                      } catch (err: unknown) {
-                        const message = err instanceof Error ? err.message : "Unexpected error";
-                        setImgError(message);
-                      } finally {
-                        setUploading(false);
+                  const fileInput = (formEl.elements.namedItem("file") as HTMLInputElement) || null;
+                  const selected = fileInput?.files ? Array.from(fileInput.files) : [];
+                  if (!selected.length) throw new Error("Choose at least one file");
+
+                  const hasPrimary = images.some((img) => img.is_primary);
+                  let primaryAssigned = hasPrimary;
+
+                  for (let idx = 0; idx < selected.length; idx += 1) {
+                    const file = selected[idx]!;
+                    const fd = new FormData();
+                    fd.set("file", file);
+                    fd.set("slug", slug);
+                    const up = await fetch("/api/admin/media/upload", { method: "POST", body: fd });
+                    const upData = await up.json();
+                    if (!up.ok) throw new Error(upData?.error || "Upload failed");
+
+                    const res = await fetch(`/api/admin/products/${id}/images`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        url: upData.url,
+                        alt: uploadAlt || null,
+                        is_primary: primaryAssigned ? false : idx === 0,
+                        color: uploadColor || null,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data?.error || "Failed to save image");
+                    if (!primaryAssigned && (idx === 0 || data?.is_primary)) {
+                      primaryAssigned = true;
+                    }
+                  }
+                  setUploadAlt("");
+                  setUploadColor("");
+                  formEl.reset();
+                  await refreshImages();
+                } catch (err: unknown) {
+                  const message = err instanceof Error ? err.message : "Unexpected error";
+                  setImgError(message);
+                } finally {
+                  setUploading(false);
                       }
                     }}
                     className="space-y-3"
                   >
                     {imgError && <div className="text-sm text-red-600 dark:text-red-400">{imgError}</div>}
                     <label className="flex flex-col gap-1 text-sm">
-                      <span>Upload image (JPG/PNG/WebP ≤ 5MB)</span>
-                      <input name="file" type="file" accept="image/*" className="text-sm" />
+                      <span>Upload image(s) (JPG/PNG/WebP ≤ 5MB)</span>
+                      <input name="file" type="file" accept="image/*" multiple className="text-sm" />
                     </label>
                     <label className="flex flex-col gap-1 text-sm">
                       <span>Color (optional)</span>

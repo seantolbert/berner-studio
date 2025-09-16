@@ -4,27 +4,12 @@ import { styleForToken } from "./woods";
 import { PRICING_SSO } from "../pricing";
 import { formatCurrency } from "@/lib/money";
 import { useModal } from "./modal/ModalProvider";
+import type { BoardLayout } from "@/types/board";
 
 type Props = {
   selectedKey: string | null;
-  boardData: {
-    strips: (string | null)[][];
-    order: { stripNo: number; reflected: boolean }[];
-  };
-  setBoardData: (
-    updater:
-      | {
-          strips: (string | null)[][];
-          order: { stripNo: number; reflected: boolean }[];
-        }
-      | ((prev: {
-          strips: (string | null)[][];
-          order: { stripNo: number; reflected: boolean }[];
-        }) => {
-          strips: (string | null)[][];
-          order: { stripNo: number; reflected: boolean }[];
-        })
-  ) => void;
+  boardData: BoardLayout;
+  setBoardData: (updater: BoardLayout | ((prev: BoardLayout) => BoardLayout)) => void;
   strip3Enabled: boolean;
   onToggleStrip3: () => void;
 };
@@ -40,7 +25,7 @@ export default function Strips({
 
   const clearRow = (row: number) => {
     const cols = boardData.strips[row]?.length ?? 13;
-    const next = {
+    const next: BoardLayout = {
       strips: boardData.strips.map((r, ri) =>
         ri === row ? Array<string | null>(cols).fill(null) : r.slice()
       ),
@@ -90,15 +75,15 @@ export default function Strips({
     // No-op if the cell is already this wood key
     const currentRow = boardData.strips[row] ?? [];
     if (currentRow[col] === key) return;
-    const next = {
-      strips: boardData.strips.map((r, ri) =>
-        ri === row ? r.slice() : r.slice()
-      ),
+    const next: BoardLayout = {
+      strips: boardData.strips.map((r) => r.slice()),
       order: boardData.order.map((o) => ({ ...o })),
     };
-    const nextRow = next.strips[row] ?? [];
-    if (!next.strips[row]) next.strips[row] = nextRow as (string | null)[];
-    nextRow[col] = key;
+    const existing = next.strips[row];
+    const cols = boardData.strips[row]?.length ?? 13;
+    const targetRow = existing ?? Array<string | null>(cols).fill(null);
+    targetRow[col] = key;
+    next.strips[row] = targetRow;
     // Log the JSON object after update
     console.log("Board Data:", next);
     setBoardData(next);

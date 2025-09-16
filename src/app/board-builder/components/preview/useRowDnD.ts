@@ -1,6 +1,8 @@
-// Only types are used elsewhere; the DnD hook was unused.
-export type Size = "small" | "regular" | "large";
-export type RowOrder = { stripNo: number; reflected: boolean };
+// Only type exports remain; the DnD implementation was removed.
+import type { BoardRowOrder, BoardSize } from "@/types/board";
+
+export type Size = BoardSize;
+export type RowOrder = BoardRowOrder;
 export type RowDnDParams = {
   order: RowOrder[];
   size: Size;

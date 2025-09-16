@@ -1,8 +1,19 @@
 "use client";
 
 import ExtrasPreview from "../components/ExtrasPreview";
+import type { BoardExtras, BoardLayout, BoardSize } from "@/types/board";
 
-export type Size = "small" | "regular" | "large";
+export type Size = BoardSize;
+
+type Props = {
+  size: BoardSize;
+  boardData: BoardLayout;
+  edgeProfile: BoardExtras["edgeProfile"];
+  borderRadius: BoardExtras["borderRadius"];
+  chamferSize: BoardExtras["chamferSize"];
+  grooveEnabled: BoardExtras["grooveEnabled"];
+  className?: string;
+};
 
 export default function PreviewPane({
   size,
@@ -12,15 +23,7 @@ export default function PreviewPane({
   chamferSize,
   grooveEnabled,
   className,
-}: {
-  size: Size;
-  boardData: { strips: (string | null)[][]; order: { stripNo: number; reflected: boolean }[] };
-  edgeProfile: "square" | "roundover" | "chamfer";
-  borderRadius: number;
-  chamferSize: number;
-  grooveEnabled: boolean;
-  className?: string;
-}) {
+}: Props) {
   const effectiveRadius = edgeProfile === "chamfer" ? 0 : borderRadius;
   return (
     <div className={className}>
@@ -35,4 +38,3 @@ export default function PreviewPane({
     </div>
   );
 }
-

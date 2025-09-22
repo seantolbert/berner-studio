@@ -81,6 +81,18 @@ body {
     "Segoe UI Emoji";
 }
 
+@layer base {
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  button svg {
+    pointer-events: none;
+  }
+}
+
 /* Trapezoid side tab used for the drawer toggle */
 .trapezoid-tab {
   /* Long vertical side on the right, angled on the left */

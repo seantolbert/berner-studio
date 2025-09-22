@@ -10,7 +10,7 @@ export default function AdminCMSPage() {
     { href: "/admin/cms/products", label: "Products" },
     { href: "/admin/cms/media", label: "Media" },
     { href: "/admin/cms/seo", label: "SEO" },
-    { href: "/admin/cms/about", label: "About" },
+    { href: "/admin/cms/info", label: "Info" },
     { href: "/admin/cms/faq", label: "FAQ" },
     { href: "/admin/cms/gallery", label: "Gallery" },
     { href: "/admin/cms/builder/pricing", label: "Builder Pricing" },

@@ -39,6 +39,9 @@ type StoredLine = {
       const line = { id, name: item.name, unitPrice: item.unitPriceCents, quantity: 1, breakdown: item.breakdown, config: item.config, image: item.image ?? image };
       const next = Array.isArray(arr) ? [...arr, line] : [line];
       localStorage.setItem("bs_cart", JSON.stringify(next));
+      try {
+        window.dispatchEvent(new CustomEvent("cart:update"));
+      } catch {}
     } catch {}
     open(
       <div className="space-y-3">

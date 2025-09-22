@@ -1,4 +1,5 @@
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
+import type { CheckoutDraftMetadata } from "@/types/checkout";
 
 export type OrderItemSnapshot = {
   id: string;
@@ -17,6 +18,7 @@ export async function createDraftOrder(args: {
   save_card: boolean;
   stripe_payment_intent_id: string;
   items: OrderItemSnapshot[];
+  metadata?: CheckoutDraftMetadata;
 }) {
   if (!adminSupabase) return null;
   const { data, error } = await adminSupabase
@@ -30,7 +32,7 @@ export async function createDraftOrder(args: {
       save_card: args.save_card,
       stripe_payment_intent_id: args.stripe_payment_intent_id,
       items: args.items,
-      metadata: {},
+      metadata: args.metadata ?? {},
     })
     .select("id")
     .single();
@@ -84,4 +86,3 @@ export async function recordPaymentEvent(args: {
     raw: args.raw ?? null,
   });
 }
-

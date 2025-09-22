@@ -3,6 +3,33 @@
 import Link from "next/link";
 import ProductCard, { ProductItem } from "@/app/components/ProductCard";
 
+type ActionProps = {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  size?: "sm" | "md";
+  className?: string;
+};
+
+function ActionPill({ label, href, onClick, size = "sm", className = "" }: ActionProps) {
+  const sizeClasses = size === "md" ? "h-9 px-3 text-sm" : "h-8 px-3 text-xs";
+  const classes = `${sizeClasses} inline-flex items-center justify-center rounded-md border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 whitespace-nowrap ${className}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={classes}>
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={classes}>
+      {label}
+    </button>
+  );
+}
+
 type ViewAll =
   | { label: string; href: string; onClick?: never }
   | { label: string; href?: never; onClick: () => void };
@@ -27,6 +54,8 @@ export default function ProductSection({
   className = "",
 }: ProductSectionProps) {
   const items = products.slice(0, Math.max(3, maxItems));
+  const viewAllAction =
+    viewAll && (viewAll.href ? { href: viewAll.href } : viewAll.onClick ? { onClick: viewAll.onClick } : null);
   return (
     <section className={`w-full ${className}`} aria-label={title}>
       <div className="max-w-6xl mx-auto px-6">
@@ -38,46 +67,19 @@ export default function ProductSection({
             ) : null}
             {collections && collections.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-3">
-                {collections.map((c, idx) =>
-                  c.href ? (
-                    <Link
-                      key={`${c.label}-${idx}`}
-                      href={c.href}
-                      className="h-8 px-3 rounded-md border border-black/10 dark:border-white/10 text-xs hover:bg-black/5 dark:hover:bg-white/10"
-                    >
-                      {c.label}
-                    </Link>
-                  ) : (
-                    <button
-                      key={`${c.label}-${idx}`}
-                      type="button"
-                      onClick={c.onClick}
-                      className="h-8 px-3 rounded-md border border-black/10 dark:border-white/10 text-xs hover:bg-black/5 dark:hover:bg-white/10"
-                    >
-                      {c.label}
-                    </button>
-                  )
-                )}
+                {collections.map((c, idx) => (
+                  <ActionPill
+                    key={`${c.label}-${idx}`}
+                    {...(c.href ? { href: c.href } : {})}
+                    {...(c.onClick ? { onClick: c.onClick } : {})}
+                    label={c.label}
+                  />
+                ))}
               </div>
             ) : null}
           </div>
-          {viewAll ? (
-            viewAll.href ? (
-              <Link
-                href={viewAll.href}
-                className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 text-sm hover:bg-black/5 dark:hover:bg-white/10 whitespace-nowrap"
-              >
-                {viewAll.label}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={viewAll.onClick}
-                className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 text-sm hover:bg-black/5 dark:hover:bg-white/10 whitespace-nowrap"
-              >
-                {viewAll.label}
-              </button>
-            )
+          {viewAll && viewAllAction ? (
+            <ActionPill label={viewAll.label} size="md" {...viewAllAction} />
           ) : null}
         </div>
 

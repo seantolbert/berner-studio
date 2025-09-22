@@ -70,7 +70,7 @@ export default function CartPage() {
                   <div className="h-16 w-16 rounded-md bg-black/5 dark:bg-white/10 overflow-hidden flex items-center justify-center" aria-hidden>
                     {it.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={it.image} alt="Board preview" className="h-full w-full object-cover" />
+                      <img src={it.image} alt={it.name || "Cart item image"} className="h-full w-full object-cover" />
                     ) : it.config ? (
                       <div style={{ transform: "scale(0.35)", transformOrigin: "top left" }}>
                         <ExtrasPreview
@@ -85,7 +85,7 @@ export default function CartPage() {
                     ) : null}
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium">Custom cutting board</div>
+                    <div className="text-sm font-medium">{it.name}</div>
                     <div className="text-xs opacity-70">{formatUsd(it.unitPrice)}</div>
                     {it.breakdown && (
                       <div className="mt-1 text-[11px] opacity-70">

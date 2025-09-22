@@ -34,7 +34,7 @@ export default function AppFooter() {
         <div>
           <div className="text-sm font-semibold mb-2">Company</div>
           <ul className="text-sm space-y-1 opacity-80">
-            <li><Link href="/about" className="hover:underline">About the maker</Link></li>
+            <li><Link href="/info" className="hover:underline">Info</Link></li>
             <li><Link href="/faq" className="hover:underline">Care & FAQ</Link></li>
             <li><Link href="/gallery" className="hover:underline">Gallery</Link></li>
           </ul>
@@ -59,4 +59,3 @@ export default function AppFooter() {
     </footer>
   );
 }
-

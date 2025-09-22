@@ -1,14 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import Button from "@/app/components/ui/Button";
 
 export type HomeHeroData = {
   title: string | null;
   subtitle: string | null;
   image_url: string | null;
   primary_label: string | null;
+  primary_href: string | null;
   secondary_label: string | null;
+  secondary_href: string | null;
 };
 
 export default function HomeHero({ data }: { data: HomeHeroData | null }) {
@@ -17,8 +19,10 @@ export default function HomeHero({ data }: { data: HomeHeroData | null }) {
     data?.subtitle ||
     "Premium, hand-crafted cutting boards. Customize the look, size, and wood combination to fit your kitchen.";
   const imageUrl = data?.image_url || "/og.svg";
-  const primaryLabel = data?.primary_label || "Start Building";
-  const secondaryLabel = data?.secondary_label || "Browse Boards";
+  const primaryLabel = data?.primary_label || "Create your own board";
+  const primaryHref = data?.primary_href || "/templates";
+  const secondaryLabel = data?.secondary_label || "Contact";
+  const secondaryHref = data?.secondary_href || "/contact";
 
   const [imgLoaded, setImgLoaded] = useState(false);
   const [src, setSrc] = useState(imageUrl);
@@ -55,12 +59,18 @@ export default function HomeHero({ data }: { data: HomeHeroData | null }) {
           <h1 className="text-3xl md:text-5xl font-semibold tracking-tight text-foreground">{title}</h1>
           <p className="text-base md:text-lg mt-3 md:mt-4 text-foreground">{subtitle}</p>
           <div className="flex flex-wrap gap-3 mt-6">
-            <Button variant="link" size="lg" onClick={() => {}} aria-disabled>
+            <Link
+              href={primaryHref}
+              className="inline-flex h-11 px-5 items-center justify-center rounded-md bg-emerald-600 text-white text-base font-medium transition-colors hover:bg-emerald-700"
+            >
               {primaryLabel}
-            </Button>
-            <Button variant="link" size="lg" onClick={() => {}} aria-disabled>
+            </Link>
+            <Link
+              href={secondaryHref}
+              className="inline-flex h-11 px-5 items-center justify-center rounded-md border border-black/10 text-base font-medium transition-colors hover:bg-black/5 dark:border-white/10 dark:hover:bg-white/10"
+            >
               {secondaryLabel}
-            </Button>
+            </Link>
           </div>
         </div>
         <div className="w-full">

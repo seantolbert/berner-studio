@@ -11,7 +11,7 @@ export default function AdminDashboardPage() {
     { title: "Products", desc: "Create, edit, publish products", href: "/admin/cms/products" },
     { title: "Media", desc: "Upload and manage images", href: "/admin/cms/media" },
     { title: "SEO", desc: "Global SEO defaults", href: "/admin/cms/seo" },
-    { title: "About", desc: "Edit About page content", href: "/admin/cms/about" },
+    { title: "Info", desc: "Edit Info page content", href: "/admin/cms/info" },
     { title: "FAQ", desc: "Manage FAQs", href: "/admin/cms/faq" },
     { title: "Gallery", desc: "Manage gallery images", href: "/admin/cms/gallery" },
     { title: "Builder Pricing", desc: "Prices for board builder sizes and extras", href: "/admin/cms/builder/pricing" },

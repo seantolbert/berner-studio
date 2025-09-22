@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import TopDrawer from "@/app/components/TopDrawer";
 import AuthButton from "@/app/components/AuthButton";
 import { mainNav } from "@/app/nav/config";
@@ -10,8 +10,48 @@ import { mainNav } from "@/app/nav/config";
 export default function AppHeader() {
   const pathname = usePathname();
   const isBuilder = pathname?.startsWith("/board-builder");
+  const isAdmin = pathname?.startsWith("/admin");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const readCartCount = () => {
+      try {
+        const raw = window.localStorage.getItem("bs_cart");
+        if (!raw) {
+          setCartCount(0);
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+          setCartCount(0);
+          return;
+        }
+        const total = parsed.reduce((sum: number, item: { quantity?: number }) => {
+          const qty = typeof item?.quantity === "number" ? item.quantity : 0;
+          return sum + Math.max(0, qty);
+        }, 0);
+        setCartCount(total);
+      } catch {
+        setCartCount(0);
+      }
+    };
+
+    readCartCount();
+
+    const handleCartUpdate = () => readCartCount();
+
+    window.addEventListener("cart:update", handleCartUpdate);
+    window.addEventListener("storage", handleCartUpdate);
+
+    return () => {
+      window.removeEventListener("cart:update", handleCartUpdate);
+      window.removeEventListener("storage", handleCartUpdate);
+    };
+  }, []);
 
   const containerClass = isBuilder
     ? "relative z-50 w-full border-b border-black/10 dark:border-white/10 bg-background"
@@ -28,31 +68,63 @@ export default function AppHeader() {
           <div className="text-lg md:text-xl" style={{ fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif' }}>Berner Studio</div>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main">
-          {mainNav.map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
-                it.cta
-                  ? "ml-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : isActive(it.href)
-                    ? "underline underline-offset-4 decoration-2"
-                    : ""
-              }`}
-              aria-current={isActive(it.href) ? "page" : undefined}
-            >
-              {it.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-2">
-            <AuthButton />
-          </div>
+        <div className="flex items-center gap-2 ml-auto md:flex-row-reverse">
+          <nav className="hidden md:flex items-center gap-1 justify-end" aria-label="Main">
+            {mainNav.map((it) => (
+              it.href === "/cart" ? (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+                    isActive(it.href) ? "bg-black/5 dark:bg-white/10" : ""
+                  }`}
+                  aria-label="View cart"
+                  aria-current={isActive(it.href) ? "page" : undefined}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <circle cx="9" cy="19" r="1.5" />
+                    <circle cx="17" cy="19" r="1.5" />
+                    <path d="M3 4h2l2.5 10.5a1 1 0 0 0 .97.75H17a1 1 0 0 0 .97-.75L20 8H6" />
+                  </svg>
+                  {cartCount > 0 ? (
+                    <span className="absolute -top-1 -right-1 inline-flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full bg-emerald-600 px-1 text-[11px] font-semibold text-white">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  ) : null}
+                </Link>
+              ) : (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+                    it.cta
+                      ? "ml-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : isActive(it.href)
+                        ? "underline underline-offset-4 decoration-2"
+                        : ""
+                  }`}
+                  aria-current={isActive(it.href) ? "page" : undefined}
+                >
+                  {it.label}
+                </Link>
+              )
+            ))}
+          </nav>
+          {isAdmin ? (
+            <div className="hidden md:flex items-center gap-2">
+              <AuthButton />
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -75,9 +147,11 @@ export default function AppHeader() {
       {/* Mobile sheet */}
       <TopDrawer open={menuOpen} onOpenChange={setMenuOpen} title="Menu" returnFocusRef={menuBtnRef} id="top-drawer">
         <div className="p-4">
-          <div className="mb-3 pb-3 border-b border-black/10 dark:border-white/10 md:hidden flex items-center justify-end gap-2">
-            <AuthButton />
-          </div>
+          {isAdmin ? (
+            <div className="mb-3 pb-3 border-b border-black/10 dark:border-white/10 md:hidden flex items-center justify-end gap-2">
+              <AuthButton />
+            </div>
+          ) : null}
           <nav className="grid gap-2 text-sm" aria-label="Main">
             {mainNav.map((it, idx) => (
               <Link

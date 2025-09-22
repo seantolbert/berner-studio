@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setDynamicWoods } from "@/app/board-builder/components/woods";
+import CostSummary from "@/app/board-builder/components/CostSummary";
 import { estimateProductETA, estimateBoardETA } from "@/lib/leadtime";
 import { formatCurrencyCents } from "@/lib/money";
 import { DEFAULT_CURRENCY } from "@/lib/env";
-import { PRICING_SSO } from "@features/board-builder/lib/pricing";
+import { PRICING_SSO, calculateBoardPrice } from "@features/board-builder/lib/pricing";
 import { listEnabledBuilderWoods } from "@/lib/supabase/usage";
 import { createBoardPreviewDataUrl } from "@/lib/boardPreviewImage";
 import type {
@@ -16,7 +17,7 @@ import type {
   ProductTemplateDetail,
 } from "@/types/product";
 import type { CartItem } from "@/types/cart";
-import type { BoardLayout } from "@/types/board";
+import type { BoardLayout, BoardSize } from "@/types/board";
 import { ProductGallery } from "@/app/products/components/ProductGallery";
 import { BoardPreviewPanel } from "@/app/products/components/BoardPreviewPanel";
 import { BoardExtrasControls } from "@/app/products/components/BoardExtrasControls";
@@ -53,6 +54,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
   const [customPrice, setCustomPrice] = useState<number | null>(null);
+  const [pricingVersion, setPricingVersion] = useState(0);
 
   useEffect(() => {
     setAssignedTemplate(template);
@@ -75,6 +77,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
       .then((woods) => {
         if (!active) return;
         setDynamicWoods(woods.map((wood) => ({ key: wood.key, color: wood.color })));
+        setPricingVersion((v) => v + 1);
       })
       .catch(() => {});
     return () => {
@@ -179,7 +182,39 @@ export function ProductPageShell({ loading, product, variants, images, template 
     return details;
   }, [grooveEnabled, brassFeet]);
 
-  const displayPrice = customPrice ?? basePrice + extrasCents;
+  const boardPricing = useMemo(() => {
+    if (!product || product.category !== "boards" || !assignedTemplate) return null;
+    const sizeKey: BoardSize = boardSize === "regular" ? "regular" : "small";
+    const { base, variable, cellCount, extrasThirdStrip = 0 } = calculateBoardPrice({
+      size: sizeKey,
+      strips: assignedTemplate.layout.strips,
+      strip3Enabled: assignedTemplate.strip3Enabled,
+    });
+    const baseCents = Math.round(base * 100);
+    const variableCents = Math.round(variable * 100);
+    const extrasThirdStripCents = Math.round(extrasThirdStrip * 100);
+    const totalCents = baseCents + variableCents + extrasThirdStripCents + extrasCents;
+    return {
+      base,
+      variable,
+      cellCount,
+      extrasThirdStrip,
+      baseCents,
+      variableCents,
+      extrasThirdStripCents,
+      extrasCents,
+      totalCents,
+    };
+  }, [product, assignedTemplate, boardSize, extrasCents, pricingVersion]);
+
+  const displayPrice = useMemo(() => {
+    if (typeof customPrice === "number") return customPrice;
+    if (product?.category === "boards") {
+      if (boardPricing) return boardPricing.totalCents;
+      return basePrice + extrasCents;
+    }
+    return basePrice;
+  }, [customPrice, product?.category, boardPricing, basePrice, extrasCents]);
 
   const etaLabel = useMemo(() => {
     if (!product) return "";
@@ -261,16 +296,46 @@ export function ProductPageShell({ loading, product, variants, images, template 
         return product.name;
       })();
 
-      const previewImage = createBoardPreviewDataUrl({
-        layout: boardLayout,
-        size: assignedTemplate?.size ?? boardSize,
-        extras: {
-          edgeProfile,
-          borderRadius,
-          chamferSize,
-          grooveEnabled,
-        },
-      });
+      const boardBreakdown =
+        product?.category === "boards" && boardPricing
+          ? {
+              baseCents: boardPricing.baseCents,
+              variableCents: boardPricing.variableCents,
+              extrasCents: boardPricing.extrasCents,
+            }
+          : undefined;
+
+      const breakdown =
+        product?.category === "boards"
+          ? {
+              baseCents: boardBreakdown?.baseCents ?? basePrice,
+              variableCents: boardBreakdown?.variableCents ?? 0,
+              extrasCents: boardBreakdown?.extrasCents ?? extrasCents,
+              ...(extrasDetailEntries.length ? { extrasDetail: extrasDetailEntries } : {}),
+            }
+          : undefined;
+
+      const boardPreviewImage =
+        product.category === "boards"
+          ? createBoardPreviewDataUrl({
+              layout: boardLayout,
+              size: assignedTemplate?.size ?? boardSize,
+              extras: {
+                edgeProfile,
+                borderRadius,
+                chamferSize,
+                grooveEnabled,
+              },
+            })
+          : null;
+
+      const fallbackProductImage = (() => {
+        if (gallery[0]?.url) return gallery[0].url;
+        if (product.primary_image_url) return product.primary_image_url;
+        return null;
+      })();
+
+      const cartLineImage = boardPreviewImage ?? fallbackProductImage ?? undefined;
 
       const line: ProductCartLine = {
         id,
@@ -291,12 +356,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
                   grooveEnabled,
                 },
               },
-              breakdown: {
-                baseCents: basePrice,
-                variableCents: 0,
-                extrasCents,
-                ...(extrasDetailEntries.length ? { extrasDetail: extrasDetailEntries } : {}),
-              },
+              ...(breakdown ? { breakdown } : {}),
             }
           : {}),
         variant: selectedVariant
@@ -306,11 +366,14 @@ export function ProductPageShell({ loading, product, variants, images, template 
               size: selectedVariant.size ?? null,
             }
           : null,
-        image: previewImage,
+        ...(cartLineImage ? { image: cartLineImage } : {}),
       };
 
       const next = [...existing, line];
       localStorage.setItem("bs_cart", JSON.stringify(next));
+      try {
+        window.dispatchEvent(new CustomEvent("cart:update"));
+      } catch {}
       setAdded(true);
     } catch (error) {
       console.error("Failed to add to cart", error);
@@ -359,7 +422,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
           <div>
             <h1 className="text-2xl font-semibold">{product.name}</h1>
             <div className="text-lg font-medium mt-1">{formatCurrencyCents(displayPrice)}</div>
-            <div className="text-xs opacity-70 mt-1">{etaLabel}</div>
+            {etaLabel && !isBoard ? <div className="text-xs opacity-70 mt-1">{etaLabel}</div> : null}
           </div>
           {product.short_desc && <p className="text-sm opacity-80">{product.short_desc}</p>}
 
@@ -368,15 +431,15 @@ export function ProductPageShell({ loading, product, variants, images, template 
               <BoardPreviewPanel
                 layout={boardLayout}
                 boardSize={boardSize}
-                edgeProfile={edgeProfile}
-                borderRadius={borderRadius}
-                chamferSize={chamferSize}
-                grooveEnabled={grooveEnabled}
-                stripSampleOption={stripSampleOption}
-                brassFeet={brassFeet}
-                edgeOption={edgeOption}
-              />
-              <BoardExtrasControls
+               edgeProfile={edgeProfile}
+               borderRadius={borderRadius}
+               chamferSize={chamferSize}
+               grooveEnabled={grooveEnabled}
+               stripSampleOption={stripSampleOption}
+               brassFeet={brassFeet}
+               edgeOption={edgeOption}
+             />
+             <BoardExtrasControls
                 boardSize={boardSize}
                 onBoardSizeChange={(next) => setBoardSize(next === "large" ? "regular" : next)}
                 grooveEnabled={grooveEnabled}
@@ -397,6 +460,27 @@ export function ProductPageShell({ loading, product, variants, images, template 
                 brassFeet={brassFeet}
                 setBrassFeet={setBrassFeet}
               />
+              {boardPricing ? (
+                <div className="rounded-lg border border-black/10 dark:border-white/10 p-4 space-y-3">
+                  <div className="text-sm font-medium">Price breakdown</div>
+                  <CostSummary
+                    base={boardPricing.base}
+                    variable={boardPricing.variable}
+                    cellCount={boardPricing.cellCount}
+                    juiceGrooveEnabled={grooveEnabled}
+                    brassFeetEnabled={brassFeet}
+                    total={boardPricing.totalCents / 100}
+                    etaLabel={etaLabel}
+                    hideCellsRow
+                  />
+                </div>
+              ) : null}
+              <ProductPurchasePanel
+                onAddToCart={addToCart}
+                onGoToCart={() => router.push("/cart")}
+                disableAdd={disableAdd}
+                added={added}
+              />
             </>
           )}
 
@@ -409,13 +493,14 @@ export function ProductPageShell({ loading, product, variants, images, template 
               onSelectSize={setSelectedSize}
             />
           )}
-
-          <ProductPurchasePanel
-            onAddToCart={addToCart}
-            onGoToCart={() => router.push("/cart")}
-            disableAdd={disableAdd}
-            added={added}
-          />
+          {(!isBoard || !assignedTemplate) && (
+            <ProductPurchasePanel
+              onAddToCart={addToCart}
+              onGoToCart={() => router.push("/cart")}
+              disableAdd={disableAdd}
+              added={added}
+            />
+          )}
         </div>
       </div>
     </main>

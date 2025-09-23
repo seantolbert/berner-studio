@@ -61,8 +61,11 @@ export function BoardExtrasControls({
   const normalizedSize: "small" | "regular" = boardSize === "large" ? "regular" : boardSize;
 
   return (
-    <div className="w-full rounded-md border border-black/10 dark:border-white/10 p-3">
-      <div className="text-sm font-medium mb-2">Customize</div>
+    <div className="w-full rounded-md border border-black/10 dark:border-white/10 p-4 space-y-4">
+      <div>
+        <div className="text-lg font-semibold">Customize</div>
+        <p className="text-xs text-foreground/70">Dial in the finishing details before you add to cart.</p>
+      </div>
       {showSizeControl && (
         <div className="mb-4">
           <div className="text-sm font-medium mb-2">Board size</div>
@@ -102,7 +105,8 @@ export function BoardExtrasControls({
       />
       {showHandleControls && topRowColors.length > 0 && (
         <div className="mt-4">
-          <div className="text-sm font-medium mb-2">Handle style</div>
+          <div className="text-sm font-medium">Handle style</div>
+          <p className="text-xs text-foreground/70 mb-2">Pick a handle cutout preview to match your board’s layout.</p>
           <div className="grid grid-cols-3 gap-3">
             {(() => {
               const len = topRowColors.length;
@@ -191,12 +195,12 @@ export function BoardExtrasControls({
               });
             })()}
         </div>
-          {showBrassControl && normalizedSize === "small" && (
-            <div className="mt-4 flex items-center justify-between rounded-md border border-black/10 dark:border-white/10 p-3">
-              <div>
-                <div className="text-sm font-medium">Brass feet</div>
-                <div className="text-xs opacity-70">Adds brass feet hardware to the base</div>
-              </div>
+        {showBrassControl && normalizedSize === "small" && (
+          <div className="mt-4 flex items-center justify-between rounded-md border border-black/10 dark:border-white/10 p-3">
+            <div>
+              <div className="text-sm font-medium">Brass feet</div>
+              <div className="text-xs text-foreground/70">Adds brass feet hardware to lift the board off the counter.</div>
+            </div>
               <button
                 type="button"
                 aria-pressed={brassFeet}

@@ -8,6 +8,7 @@ import { ModalProvider, ModalRoot } from "@features/board-builder/ui/modal/Modal
 import AddToCartButton from "@features/board-builder/ui/AddToCartButton";
 import { ProductGallery } from "@/app/products/components/ProductGallery";
 import { BoardExtrasControls } from "@/app/products/components/BoardExtrasControls";
+import { DEFAULT_EDGE_OPTION } from "@/app/board-builder/components/ExtrasFormControls";
 import { BoardPreviewPanel } from "@/app/products/components/BoardPreviewPanel";
 import { createBoardPreviewDataUrl } from "@/lib/boardPreviewImage";
 import type { BoardExtras, BoardLayout, BoardRowOrder, BoardSize } from "@/types/board";
@@ -19,7 +20,7 @@ export default function ExtrasPage() {
   const [edgeProfile, setEdgeProfile] = useState<BoardExtras["edgeProfile"]>("square");
   const [borderRadius, setBorderRadius] = useState<BoardExtras["borderRadius"]>(0);
   const [chamferSize, setChamferSize] = useState<BoardExtras["chamferSize"]>(8);
-  const [edgeOption, setEdgeOption] = useState<string>("square");
+  const [edgeOption, setEdgeOption] = useState<string>(DEFAULT_EDGE_OPTION);
   const [grooveEnabled, setGrooveEnabled] = useState<BoardExtras["grooveEnabled"]>(false);
   const [boardData, setBoardData] = useState<BoardLayout>({ strips: [[], [], []], order: [] });
   const [stripSampleOption, setStripSampleOption] = useState<"none" | "glide" | "lift">("none");
@@ -261,30 +262,6 @@ export default function ExtrasPage() {
           </div>
         </div>
 
-        <div className="w-full p-4 md:hidden">
-          <BoardExtrasControls
-            boardSize={size}
-            onBoardSizeChange={setSize}
-            grooveEnabled={grooveEnabled}
-            setGrooveEnabled={setGrooveEnabled}
-            edgeProfile={edgeProfile}
-            setEdgeProfile={setEdgeProfile}
-            borderRadius={borderRadius}
-            setBorderRadius={setBorderRadius}
-            chamferSize={chamferSize}
-            setChamferSize={setChamferSize}
-            edgeOption={edgeOption}
-            setEdgeOption={setEdgeOption}
-            topRowColors={topRowColors}
-            cornerColors2x2={cornerColors2x2}
-            stripSampleOption={stripSampleOption}
-            setStripSampleOption={setStripSampleOption}
-            handleEnabled={handleEnabled}
-            brassFeet={brassFeet}
-            setBrassFeet={setBrassFeet}
-            showSizeControl={false}
-          />
-        </div>
         <ModalRoot />
       </main>
     </ModalProvider>

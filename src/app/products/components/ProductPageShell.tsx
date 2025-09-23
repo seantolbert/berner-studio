@@ -10,6 +10,7 @@ import { DEFAULT_CURRENCY } from "@/lib/env";
 import { PRICING_SSO, calculateBoardPrice } from "@features/board-builder/lib/pricing";
 import { listEnabledBuilderWoods } from "@/lib/supabase/usage";
 import { createBoardPreviewDataUrl } from "@/lib/boardPreviewImage";
+import { DEFAULT_EDGE_OPTION } from "@/app/board-builder/components/ExtrasFormControls";
 import type {
   ProductCore,
   ProductImage,
@@ -45,7 +46,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
   const [edgeProfile, setEdgeProfile] = useState<"square" | "chamfer" | "roundover">("square");
   const [borderRadius, setBorderRadius] = useState<number>(0);
   const [chamferSize, setChamferSize] = useState<number>(8);
-  const [edgeOption, setEdgeOption] = useState<string>("square");
+  const [edgeOption, setEdgeOption] = useState<string>(DEFAULT_EDGE_OPTION);
   const [grooveEnabled, setGrooveEnabled] = useState<boolean>(false);
   const [stripSampleOption, setStripSampleOption] = useState<"none" | "glide" | "lift">("none");
   const [brassFeet, setBrassFeet] = useState<boolean>(false);

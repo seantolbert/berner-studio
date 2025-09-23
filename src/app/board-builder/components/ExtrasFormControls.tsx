@@ -2,7 +2,6 @@
 
 import PreviewRow from "../components/preview/PreviewRow";
 import { styleForToken } from "../components/woods";
-import { useMemo } from "react";
 
 type EdgeProfile = "square" | "roundover" | "chamfer";
 
@@ -19,6 +18,17 @@ type EdgeOption =
       chamferBLX?: number;
       chamferBLY?: number;
     };
+
+export const EDGE_OPTION_PRESETS: EdgeOption[] = [
+  { key: "edged", label: "Edged", kind: "edged" },
+  { key: "rounded4", label: "Rounded", kind: "rounded", radius: 4 },
+  { key: "rounded8", label: "Heavy Rounded", kind: "rounded", radius: 8 },
+  { key: "double_chamfer", label: "Double Chamfer", kind: "chamfer", chamfer: 8 },
+  { key: "diamond", label: "Diamond", kind: "chamfer", chamferTLX: 3, chamferTLY: 2, chamferBLX: 6, chamferBLY: 12 },
+  { key: "flat_top", label: "Flat Top", kind: "chamfer", chamferTLX: 0, chamferTLY: 0, chamferBLX: 6, chamferBLY: 12 },
+];
+
+export const DEFAULT_EDGE_OPTION = EDGE_OPTION_PRESETS[0]?.key ?? "edged";
 
 export default function ExtrasFormControls({
   grooveEnabled,
@@ -54,25 +64,13 @@ export default function ExtrasFormControls({
   const PREVIEW_CELL_PX = 20;
   const VISIBLE_CELLS = 4;
 
-  const EDGE_OPTIONS: EdgeOption[] = useMemo(
-    () => [
-      { key: "edged", label: "Edged", kind: "edged" },
-      { key: "rounded4", label: "Rounded", kind: "rounded", radius: 4 },
-      { key: "rounded8", label: "Heavy Rounded", kind: "rounded", radius: 8 },
-      { key: "double_chamfer", label: "Double Chamfer", kind: "chamfer", chamfer: 8 },
-      { key: "diamond", label: "Diamond", kind: "chamfer", chamferTLX: 3, chamferTLY: 2, chamferBLX: 6, chamferBLY: 12 },
-      { key: "flat_top", label: "Flat Top", kind: "chamfer", chamferTLX: 0, chamferTLY: 0, chamferBLX: 6, chamferBLY: 12 },
-    ],
-    []
-  );
-
   const content = (
     <div className="grid gap-4">
-      {/* Juice groove toggle (hidden on mobile; shown on md+) */}
-      <div className="hidden md:flex items-center justify-between">
+      {/* Juice groove toggle */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
           <div className="text-sm font-medium">Juice groove</div>
-          <div className="text-xs opacity-70">Previewed as a black inset line</div>
+          <div className="text-xs text-foreground/70">Adds a carved channel to catch liquids.</div>
         </div>
         <button
           type="button"
@@ -89,7 +87,8 @@ export default function ExtrasFormControls({
 
       {/* Corner presets */}
       <div>
-        <div className="text-sm font-medium mb-2">Corner</div>
+        <div className="text-sm font-medium">Corner</div>
+        <p className="text-xs text-foreground/70 mb-2">Set how each corner of the board is shaped.</p>
         <div className="grid grid-cols-4 gap-3">
           {[
             { key: "edged", label: "Edged", onSelect: () => { setEdgeProfile("square"); setBorderRadius(0); } },
@@ -145,9 +144,10 @@ export default function ExtrasFormControls({
 
       {/* Edge profile chooser */}
       <div>
-        <div className="text-sm font-medium mb-2">Edge profile</div>
+        <div className="text-sm font-medium">Edge profile</div>
+        <p className="text-xs text-foreground/70 mb-2">Choose the profile carved along the board edges.</p>
         <div className="grid grid-cols-3 gap-3">
-          {EDGE_OPTIONS.map((opt) => (
+          {EDGE_OPTION_PRESETS.map((opt) => (
             <button
               key={opt.key}
               type="button"

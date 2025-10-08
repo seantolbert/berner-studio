@@ -38,51 +38,69 @@ export const WOODS: Wood[] = [
 ];
 
 export const woodByKey: Record<string, Wood> = Object.fromEntries(
-  WOODS.map((w) => [w.key, w])
+  WOODS.map((w) => [w.key.toLowerCase(), w])
 );
 
 // Dynamic override map populated from backend (builder_woods)
 let DYNAMIC_WOODS: Record<string, { color: string; price?: number }> = {};
+let DYNAMIC_WOOD_KEYS: string[] = [];
 let DYNAMIC_WOODS_VERSION = 0;
 export function setDynamicWoods(list: Array<{ key: string; color: string; price?: number }>) {
   const next: Record<string, { color: string; price?: number }> = {};
+  const keys: string[] = [];
   for (const it of list) {
-    if (it?.key && it?.color) {
-      if (typeof it.price === "number") {
-        next[it.key] = { color: it.color, price: it.price };
-      } else {
-        next[it.key] = { color: it.color };
-      }
-    }
+    const rawKey = typeof it?.key === "string" ? it.key.trim() : "";
+    const rawColor = typeof it?.color === "string" ? it.color.trim() : "";
+    if (!rawKey || !rawColor) continue;
+    const key = rawKey.toLowerCase();
+    const entry = typeof it.price === "number" && Number.isFinite(it.price)
+      ? { color: rawColor, price: it.price }
+      : { color: rawColor };
+    next[key] = entry;
+    keys.push(key);
   }
   DYNAMIC_WOODS = next;
+  DYNAMIC_WOOD_KEYS = keys;
   DYNAMIC_WOODS_VERSION += 1;
 }
 
 export function styleForToken(token: string | null, cellPx: number): CSSProperties | undefined {
   if (!token) return undefined;
-  // Prefer matching by wood key; fallback to color hex
-  const byKey = woodByKey[token];
-  const dyn = DYNAMIC_WOODS[token];
+  const trimmed = token.trim();
+  if (!trimmed) return undefined;
+  const lowered = trimmed.toLowerCase();
+
+  const byKey = woodByKey[lowered];
+  const dyn = DYNAMIC_WOODS[lowered] ?? DYNAMIC_WOODS[trimmed];
+
   if (dyn || byKey) {
+    const baseColor = dyn?.color ?? byKey?.color;
+    if (!baseColor) return undefined;
     return {
-      backgroundColor: (dyn?.color || byKey?.color) as string,
+      backgroundColor: baseColor,
       ...(byKey?.pattern ? byKey.pattern(cellPx) : {}),
     } as CSSProperties;
   }
-  const byColor = WOODS.find((w) => w.color === token);
+
+  const byColor = WOODS.find((w) => w.color.toLowerCase() === lowered);
   if (byColor) {
     return {
       backgroundColor: byColor.color,
       ...(byColor.pattern ? byColor.pattern(cellPx) : {}),
     } as CSSProperties;
   }
-  return { backgroundColor: token } as CSSProperties;
+  if (trimmed.startsWith("#") || trimmed.startsWith("rgb")) {
+    return { backgroundColor: trimmed } as CSSProperties;
+  }
+  return undefined;
 }
 
 export function getPriceForToken(token: string | null): number | null {
   if (!token) return null;
-  const dyn = DYNAMIC_WOODS[token];
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+  const lowered = trimmed.toLowerCase();
+  const dyn = DYNAMIC_WOODS[lowered] ?? DYNAMIC_WOODS[trimmed];
   if (dyn && typeof dyn.price === "number") return dyn.price;
   return null;
 }
@@ -92,6 +110,5 @@ export function getDynamicWoodsVersion(): number {
 }
 
 export function getAvailableWoodKeys(): string[] {
-  const keys = Object.keys(DYNAMIC_WOODS);
-  return keys;
+  return DYNAMIC_WOOD_KEYS.slice();
 }

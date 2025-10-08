@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import TopDrawer from "@/app/components/TopDrawer";
@@ -64,7 +65,14 @@ export default function AppHeader() {
       <div className="mx-auto max-w-5xl px-4 h-14 md:h-16 flex items-center justify-between gap-4">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 active:opacity-80" aria-label="Go to homepage">
-          <div className="rounded-full border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/10 h-6 w-6" aria-hidden />
+          <Image
+            src="/logo.svg"
+            alt="Berner Studio logo"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
+            priority
+          />
           <div className="text-lg md:text-xl" style={{ fontFamily: 'Calibri, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif' }}>Berner Studio</div>
         </Link>
 

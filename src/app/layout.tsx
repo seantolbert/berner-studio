@@ -38,6 +38,14 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: ["/og.svg"],
   },
+  icons: {
+    icon: [
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/logo.svg", sizes: "any" },
+    ],
+    apple: "/logo.svg",
+    shortcut: "/logo.svg",
+  },
 };
 
 export const viewport: Viewport = {

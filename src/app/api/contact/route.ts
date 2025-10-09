@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   const subject = `New contact inquiry${name ? ` from ${name}` : ""}`;
-  const textBody = `You have a new message from the Info page contact form.
+  const textBody = `You have a new message from the website contact form.
 
 Name: ${name || "Not provided"}
 Email: ${email}
@@ -55,7 +55,7 @@ Message:
 ${message}
 `;
   const sanitizedMessage = escapeHtml(message).replace(/\n/g, "<br />");
-  const htmlBody = `<p>You have a new message from the Info page contact form.</p>
+  const htmlBody = `<p>You have a new message from the website contact form.</p>
   <p><strong>Name:</strong> ${escapeHtml(name ?? "Not provided")}<br />
   <strong>Email:</strong> ${escapeHtml(email)}</p>
   <p><strong>Message</strong></p>

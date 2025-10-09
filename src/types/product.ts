@@ -5,6 +5,7 @@ export type ProductSummary = {
   name: string;
   price_cents: number;
   primary_image_url: string | null;
+  card_label: string | null;
 };
 
 export type ProductVariant = {
@@ -41,6 +42,7 @@ export type ProductCore = {
   primary_image_url: string | null;
   short_desc: string | null;
   long_desc: string | null;
+  card_label: string | null;
 };
 
 export type ProductDetail = {

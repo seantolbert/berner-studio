@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { ProductItem } from "@/app/components/ProductCard";
 
@@ -53,7 +54,25 @@ export default function ProductSection({
   maxItems = 3,
   className = "",
 }: ProductSectionProps) {
-  const items = products.slice(0, Math.max(3, maxItems));
+  const [activeCollection, setActiveCollection] = useState<string | null>(null);
+  const normalizedCollections =
+    collections?.map((collection) => ({
+      ...collection,
+      label: collection.label,
+    })) ?? [];
+
+  const filteredProducts = useMemo(() => {
+    if (!activeCollection) return products;
+    const target = activeCollection.toLowerCase();
+    const byTag = products.filter((product) =>
+      (product.tags || []).some((tag) => tag.toLowerCase() === target)
+    );
+    if (byTag.length > 0) return byTag;
+    return products;
+  }, [products, activeCollection]);
+
+  const limit = activeCollection ? 3 : Math.max(3, maxItems);
+  const items = filteredProducts.slice(0, limit);
   const viewAllAction =
     viewAll && (viewAll.href ? { href: viewAll.href } : viewAll.onClick ? { onClick: viewAll.onClick } : null);
   return (
@@ -65,16 +84,25 @@ export default function ProductSection({
             {subtext ? (
               <p className="text-sm md:text-base text-foreground/80 mt-1">{subtext}</p>
             ) : null}
-            {collections && collections.length > 0 ? (
+            {normalizedCollections.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-3">
-                {collections.map((c, idx) => (
+                {normalizedCollections.map((c, idx) => {
+                  const isActive =
+                    activeCollection !== null &&
+                    activeCollection.toLowerCase() === c.label.toLowerCase();
+                  return (
                   <ActionPill
                     key={`${c.label}-${idx}`}
-                    {...(c.href ? { href: c.href } : {})}
-                    {...(c.onClick ? { onClick: c.onClick } : {})}
+                    onClick={() =>
+                      setActiveCollection((current) =>
+                        current && current.toLowerCase() === c.label.toLowerCase() ? null : c.label
+                      )
+                    }
+                    className={isActive ? "border-emerald-500 text-emerald-700 dark:text-emerald-300" : ""}
                     label={c.label}
                   />
-                ))}
+                  );
+                })}
               </div>
             ) : null}
           </div>

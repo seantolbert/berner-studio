@@ -51,7 +51,9 @@ function normalizeProductSummary(row: Record<string, unknown>): ProductSummary |
   const priceRaw = Number(row.price_cents);
   const price = Number.isFinite(priceRaw) ? Math.max(0, Math.round(priceRaw)) : 0;
   const image = typeof row.primary_image_url === "string" ? row.primary_image_url : null;
-  return { slug, name, price_cents: price, primary_image_url: image };
+  const cardLabel =
+    typeof row.card_label === "string" && row.card_label.trim().length > 0 ? row.card_label : null;
+  return { slug, name, price_cents: price, primary_image_url: image, card_label: cardLabel };
 }
 
 function normalizeProductCore(row: Record<string, unknown>): ProductCore | null {
@@ -66,6 +68,8 @@ function normalizeProductCore(row: Record<string, unknown>): ProductCore | null 
   const primaryImage = typeof row.primary_image_url === "string" ? row.primary_image_url : null;
   const shortDesc = typeof row.short_desc === "string" ? row.short_desc : null;
   const longDesc = typeof row.long_desc === "string" ? row.long_desc : null;
+  const cardLabel =
+    typeof row.card_label === "string" && row.card_label.trim().length > 0 ? row.card_label : null;
   return {
     id,
     slug,
@@ -76,6 +80,7 @@ function normalizeProductCore(row: Record<string, unknown>): ProductCore | null 
     primary_image_url: primaryImage,
     short_desc: shortDesc,
     long_desc: longDesc,
+    card_label: cardLabel,
   };
 }
 
@@ -133,7 +138,7 @@ export async function fetchProductSummaries(options: {
   const { sort, page, pageSize, category, collection } = options;
   let query = supabase
     .from("products")
-    .select("slug,name,price_cents,primary_image_url,status,deleted_at,category,tags,updated_at", { count: "exact" })
+    .select("slug,name,price_cents,primary_image_url,status,deleted_at,category,tags,updated_at,card_label", { count: "exact" })
     .eq("status", "published")
     .is("deleted_at", null);
 
@@ -199,7 +204,7 @@ export async function fetchProductDetail(slug: string): Promise<ProductDetail | 
   const { data: productRow, error: productError } = await supabase
     .from("products")
     .select(
-      "id,slug,name,price_cents,category,status,primary_image_url,short_desc,long_desc,deleted_at,product_template_id"
+      "id,slug,name,price_cents,category,status,primary_image_url,short_desc,long_desc,deleted_at,product_template_id,card_label"
     )
     .eq("slug", slug)
     .eq("status", "published")

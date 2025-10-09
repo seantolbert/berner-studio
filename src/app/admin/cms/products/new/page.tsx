@@ -27,8 +27,10 @@ export default function NewProductPage() {
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
   const [status, setStatus] = useState("draft");
-  const [collection, setCollection] = useState<string>("");
   const [collections, setCollections] = useState<Array<{ id: string; label: string; href: string | null }>>([]);
+  const [cardLabel, setCardLabel] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imgAlt, setImgAlt] = useState("");
@@ -72,6 +74,23 @@ export default function NewProductPage() {
     };
   }, []);
 
+  const addTag = (raw: string) => {
+    const value = raw.trim();
+    if (!value) return;
+    setTags((prev) => {
+      if (prev.some((tag) => tag.toLowerCase() === value.toLowerCase())) return prev;
+      return [...prev, value];
+    });
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => {
+    const target = tag.toLowerCase();
+    setTags((prev) => prev.filter((item) => item.toLowerCase() !== target));
+  };
+
+  const hasTag = (tag: string) => tags.some((item) => item.toLowerCase() === tag.toLowerCase());
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -86,7 +105,21 @@ export default function NewProductPage() {
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, price_cents, category, short_desc: shortDesc, long_desc: longDesc, status, collection: collection || undefined }),
+        body: JSON.stringify({
+          name,
+          slug,
+          price_cents,
+          category,
+          short_desc: shortDesc,
+          long_desc: longDesc,
+          status,
+          collection:
+            collections
+              .map((c) => c.label)
+              .find((label) => hasTag(label)) || undefined,
+          card_label: cardLabel.trim() || null,
+          tags,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to create product");
@@ -199,21 +232,84 @@ export default function NewProductPage() {
                   <option value="archived">Archived</option>
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span>Collection (optional)</span>
-                <select value={collection} onChange={(e)=>setCollection(e.target.value)} className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent">
-                  <option value="">None</option>
-                  {collections.map((c) => (
-                    <option key={c.id} value={c.label}>{c.label}</option>
-                  ))}
-                </select>
-                <span className="text-[11px] opacity-70">Collections are defined under Home CMS sections.</span>
-              </label>
+              <div className="rounded-md border border-black/10 dark:border-white/10 p-3 md:col-span-3">
+                <div className="text-sm font-medium mb-2">Collections</div>
+                {collections.length ? (
+                  <div className="flex flex-wrap gap-3">
+                    {collections.map((c) => (
+                      <label key={c.id} className="inline-flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={hasTag(c.label)}
+                          onChange={(e) => (e.target.checked ? addTag(c.label) : removeTag(c.label))}
+                        />
+                        {c.label}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs opacity-70">No collections found. Manage collections under Home CMS sections.</div>
+                )}
+                <span className="text-[11px] opacity-70 mt-2 block">Collections are defined under Home CMS sections.</span>
+              </div>
             </div>
 
             <label className="flex flex-col gap-1 text-sm">
               <span>Short description</span>
               <input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent" />
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span>Tags (optional)</span>
+              <div className="flex items-center gap-2">
+                <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTag(tagInput);
+                    }
+                  }}
+                  placeholder="Type a tag and press Enter"
+                  className="h-9 flex-1 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => addTag(tagInput)}
+                  className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 text-sm"
+                >
+                  Add
+                </button>
+              </div>
+              {tags.length ? (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-white/10 px-3 py-1 text-xs"
+                    >
+                      {tag}
+                      <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`} className="opacity-70 hover:opacity-100">
+                        x
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <span className="text-[11px] opacity-70">Tags help with internal grouping and filters. They are case-insensitive.</span>
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span>Product card label (optional)</span>
+              <input
+                value={cardLabel}
+                maxLength={60}
+                onChange={(e) => setCardLabel(e.target.value)}
+                placeholder="e.g. Limited Release"
+                className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
+              />
+              <span className="text-[11px] opacity-70">Shown as a badge on product cards (max 60 characters).</span>
             </label>
 
             <label className="flex flex-col gap-1 text-sm">

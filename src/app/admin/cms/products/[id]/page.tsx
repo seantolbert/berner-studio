@@ -25,6 +25,7 @@ type Product = {
   created_at: string;
   updated_at: string;
   product_template_id?: string | null;
+  card_label: string | null;
 };
 
 export default function EditProductPage() {
@@ -44,7 +45,10 @@ export default function EditProductPage() {
   const [status, setStatus] = useState("draft");
   const [primaryImage, setPrimaryImage] = useState<string>("");
   const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [collections, setCollections] = useState<Array<{ id: string; label: string; href: string | null }>>([]);
   const [productTemplateId, setProductTemplateId] = useState<string | "" | null>(null);
+  const [cardLabel, setCardLabel] = useState("");
   const [templateOptions, setTemplateOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -73,6 +77,23 @@ export default function EditProductPage() {
   const defaultSizes = ['S','M','L','XL'];
   const [selectedColors, setSelectedColors] = useState<string[]>(defaultColors);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(defaultSizes);
+
+  const addTag = (raw: string) => {
+    const value = raw.trim();
+    if (!value) return;
+    setTags((prev) => {
+      if (prev.some((tag) => tag.toLowerCase() === value.toLowerCase())) return prev;
+      return [...prev, value];
+    });
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => {
+    const target = tag.toLowerCase();
+    setTags((prev) => prev.filter((item) => item.toLowerCase() !== target));
+  };
+
+  const hasTag = (tag: string) => tags.some((item) => item.toLowerCase() === tag.toLowerCase());
 
   async function refreshImages() {
     setImgLoading(true);
@@ -110,6 +131,7 @@ export default function EditProductPage() {
         setPrimaryImage(p.primary_image_url || "");
         setTags(Array.isArray(p.tags) ? p.tags.map((t) => String(t)) : []);
         setProductTemplateId(p.product_template_id || "");
+        setCardLabel(p.card_label || "");
         await refreshImages();
         // Load SEO overrides
         try {
@@ -137,6 +159,35 @@ export default function EditProductPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Load available collections for tag shortcuts
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/home-sections");
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || "Failed to load sections");
+        const opts: Array<{ id: string; label: string; href: string | null }> = [];
+        for (const s of (json.items || [])) {
+          for (const c of (s.collections || [])) {
+            opts.push({ id: c.id, label: c.label, href: c.href ?? null });
+          }
+        }
+        const seen = new Set<string>();
+        const unique = opts.filter((o) => {
+          const key = (o.label || "").toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        if (!aborted) setCollections(unique);
+      } catch {}
+    })();
+    return () => {
+      aborted = true;
+    };
+  }, []);
+
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -157,6 +208,7 @@ export default function EditProductPage() {
           primary_image_url: primaryImage || null,
           tags,
           product_template_id: productTemplateId ? productTemplateId : null,
+          card_label: cardLabel.trim() || null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -208,7 +260,16 @@ export default function EditProductPage() {
         const res = await fetch(`/api/admin/product-templates`);
         const data = await res.json();
         if (!mounted) return;
-        if (res.ok) setTemplateOptions((data.items || []).map((t: any) => ({ id: t.id, name: t.name })));
+        if (res.ok) {
+          const items = Array.isArray(data.items)
+            ? data.items.filter((entry: unknown): entry is { id: string; name: string } => {
+                if (!entry || typeof entry !== "object") return false;
+                const candidate = entry as { id?: unknown; name?: unknown };
+                return typeof candidate.id === "string" && typeof candidate.name === "string";
+              })
+            : [];
+          setTemplateOptions(items.map((item: { id: string; name: string }) => ({ id: item.id, name: item.name })));
+        }
       } catch {}
     })();
     return () => { mounted = false; };
@@ -339,23 +400,61 @@ export default function EditProductPage() {
             {/* Collections */}
             <div className="rounded-md border border-black/10 dark:border-white/10 p-3">
               <div className="text-sm font-medium mb-2">Collections</div>
-              <label className="inline-flex items-center gap-2 mr-4 text-sm">
-                <input
-                  type="checkbox"
-                  checked={tags.includes('purist')}
-                  onChange={(e)=> setTags((prev)=> e.target.checked ? Array.from(new Set([...prev, 'purist'])) : prev.filter(t=>t!=='purist'))}
-                />
-                Purist
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={tags.includes('classics')}
-                  onChange={(e)=> setTags((prev)=> e.target.checked ? Array.from(new Set([...prev, 'classics'])) : prev.filter(t=>t!=='classics'))}
-                />
-                Classics
-              </label>
+              {collections.length ? (
+                <div className="flex flex-wrap gap-3">
+                  {collections.map((collection) => (
+                    <label key={collection.id} className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={hasTag(collection.label)}
+                        onChange={(e) => (e.target.checked ? addTag(collection.label) : removeTag(collection.label))}
+                      />
+                      {collection.label}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs opacity-70">No collections found. Manage collections under Home CMS sections.</div>
+              )}
             </div>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span>Tags (optional)</span>
+              <div className="flex items-center gap-2">
+                <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag(tagInput);
+                    }
+                  }}
+                  placeholder="Type a tag and press Enter"
+                  className="h-9 flex-1 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => addTag(tagInput)}
+                  className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 text-sm"
+                >
+                  Add
+                </button>
+              </div>
+              {tags.length ? (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tags.map((tag) => (
+                    <span key={tag} className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-white/10 px-3 py-1 text-xs">
+                      {tag}
+                      <button type="button" onClick={() => removeTag(tag)} aria-label={`Remove ${tag}`} className="opacity-70 hover:opacity-100">
+                        x
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <span className="text-[11px] opacity-70">Tags help with internal grouping and filters. They are case-insensitive.</span>
+            </label>
 
               <label className="flex flex-col gap-1 text-sm">
                 <span>Primary image URL</span>
@@ -366,6 +465,18 @@ export default function EditProductPage() {
               <label className="flex flex-col gap-1 text-sm">
                 <span>Short description</span>
                 <input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent" />
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm">
+                <span>Product card label (optional)</span>
+                <input
+                  value={cardLabel}
+                  maxLength={60}
+                  onChange={(e) => setCardLabel(e.target.value)}
+                  placeholder="e.g. Limited Release"
+                  className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
+                />
+                <span className="text-[11px] opacity-70">Shown as a badge on product cards (max 60 characters).</span>
               </label>
 
               <label className="flex flex-col gap-1 text-sm">

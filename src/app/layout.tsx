@@ -2,18 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import AppHeader from "@/app/components/AppHeader";
 import AppFooter from "@/app/components/AppFooter";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const siteName = "Berner Studio";
 const siteDescription = "Custom cutting boards and goods";
@@ -65,9 +54,7 @@ export default function RootLayout({
   const SENTRY_DSN = process.env.SENTRY_DSN;
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
+      <body className="antialiased min-h-screen flex flex-col">
         <AppHeader />
         {GA_ID ? (
           <>

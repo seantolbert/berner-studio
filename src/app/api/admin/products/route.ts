@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     status: z.enum(["draft", "published", "archived"]).optional(),
     collection: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
+    card_label: z.string().max(60).nullable().optional(),
   });
   const jsonUnknown = await req.json().catch(() => undefined);
   const parsed = Body.safeParse(jsonUnknown);
@@ -54,6 +55,8 @@ export async function POST(req: NextRequest) {
   const short_desc = b.short_desc ?? null;
   const long_desc = b.long_desc ?? null;
   const status = b.status ?? "draft";
+  const cardLabelInput = typeof b.card_label === "string" ? b.card_label.trim() : null;
+  const card_label = cardLabelInput ? cardLabelInput : null;
   let tags: string[] | undefined = undefined;
   if (Array.isArray(b.tags)) tags = b.tags;
   if (b.collection) tags = Array.from(new Set([...(tags || []), b.collection]));
@@ -65,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await adminSupabase
     .from("products")
-    .insert({ name, slug, price_cents, category, short_desc, long_desc, status, ...(tags ? { tags } : {}) })
+    .insert({ name, slug, price_cents, category, short_desc, long_desc, status, card_label, ...(tags ? { tags } : {}) })
     .select("id, slug")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

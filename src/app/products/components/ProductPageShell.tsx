@@ -56,6 +56,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
   const [added, setAdded] = useState(false);
   const [customPrice, setCustomPrice] = useState<number | null>(null);
   const [pricingVersion, setPricingVersion] = useState(0);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   useEffect(() => {
     setAssignedTemplate(template);
@@ -63,6 +64,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
 
   useEffect(() => {
     setLocalImages(images);
+    setSelectedImageId(images[0]?.id ?? null);
   }, [images]);
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
   }, [assignedTemplate]);
 
   useEffect(() => {
+    if (!template) return;
     try {
       const raw = typeof window !== "undefined" ? localStorage.getItem("bs_current_config") : null;
       if (!raw) return;
@@ -123,7 +126,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
         setCustomPrice(Math.max(0, Math.round(cfg.breakdown.total)));
       }
     } catch {}
-  }, []);
+  }, [template]);
 
   const handleEnabled = (opt: "none" | "glide" | "lift") => {
     const eo = (edgeOption || "").toLowerCase();
@@ -160,6 +163,22 @@ export function ProductPageShell({ loading, product, variants, images, template 
       : [];
     return byColor.length ? byColor : localImages;
   }, [localImages, selectedColor]);
+
+  useEffect(() => {
+    if (!selectedImageId) return;
+    const exists = gallery.some((image) => image.id === selectedImageId);
+    if (!exists) {
+      setSelectedImageId(gallery[0]?.id ?? null);
+    }
+  }, [gallery, selectedImageId]);
+
+  const displayImage = useMemo(() => {
+    if (selectedImageId) {
+      const match = gallery.find((image) => image.id === selectedImageId);
+      if (match) return match;
+    }
+    return gallery[0] ?? null;
+  }, [gallery, selectedImageId]);
 
   const selectedVariant = useMemo(() => {
     if (!selectedColor || !selectedSize) return null;
@@ -269,7 +288,8 @@ export function ProductPageShell({ loading, product, variants, images, template 
     return out;
   }, [assignedTemplate, boardSize]);
 
-  const isBoard = product?.category === "boards" && assignedTemplate;
+  const isBoardProduct = product?.category === "boards";
+  const canCustomizeBoard = Boolean(isBoardProduct && template && assignedTemplate);
   const disableAdd = product?.category === "apparel" && (!selectedColor || !selectedSize);
   const boardLayout: BoardLayout = assignedTemplate?.layout ?? { strips: [], order: [] };
 
@@ -317,10 +337,10 @@ export function ProductPageShell({ loading, product, variants, images, template 
           : undefined;
 
       const boardPreviewImage =
-        product.category === "boards"
+        canCustomizeBoard && assignedTemplate
           ? createBoardPreviewDataUrl({
               layout: boardLayout,
-              size: assignedTemplate?.size ?? boardSize,
+              size: assignedTemplate.size,
               extras: {
                 edgeProfile,
                 borderRadius,
@@ -409,25 +429,33 @@ export function ProductPageShell({ loading, product, variants, images, template 
         }}
       />
       <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-2 items-start">
-        <ProductGallery
-          primary={gallery[0] ?? null}
+      <ProductGallery
+          primary={displayImage}
           fallbackImage={product.primary_image_url}
           productName={product.name}
           gallery={gallery}
           onSelectImage={(image) => {
-            const order = [image, ...localImages.filter((item) => item.id !== image.id)];
-            setLocalImages(order);
+            setSelectedImageId(image.id);
           }}
         />
-        <div className="space-y-4">
+        <div className="space-y-4 px-3">
           <div>
             <h1 className="text-2xl font-semibold">{product.name}</h1>
             <div className="text-lg font-medium mt-1">{formatCurrencyCents(displayPrice)}</div>
-            {etaLabel && !isBoard ? <div className="text-xs opacity-70 mt-1">{etaLabel}</div> : null}
+            {etaLabel && !canCustomizeBoard ? <div className="text-xs opacity-70 mt-1">{etaLabel}</div> : null}
           </div>
-          {product.short_desc && <p className="text-sm opacity-80">{product.short_desc}</p>}
+          {product.short_desc ? (
+            <p className="text-sm opacity-80">{product.short_desc}</p>
+          ) : null}
+          {product.long_desc ? (
+            <article className="prose prose-sm max-w-none dark:prose-invert">
+              <div
+                dangerouslySetInnerHTML={{ __html: product.long_desc }}
+              />
+            </article>
+          ) : null}
 
-          {isBoard && assignedTemplate && (
+          {canCustomizeBoard && assignedTemplate && (
             <>
               <BoardPreviewPanel
                 layout={boardLayout}
@@ -494,7 +522,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
               onSelectSize={setSelectedSize}
             />
           )}
-          {(!isBoard || !assignedTemplate) && (
+          {!canCustomizeBoard && (
             <ProductPurchasePanel
               onAddToCart={addToCart}
               onGoToCart={() => router.push("/cart")}

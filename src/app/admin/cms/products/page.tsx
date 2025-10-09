@@ -15,13 +15,18 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-[11px] px-2 py-0.5 rounded ${cls}`}>{status}</span>;
 }
 
+type PageSearchParams = Record<string, string | string[] | undefined>;
+
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams?: { q?: string; status?: string };
+  searchParams?: Promise<PageSearchParams>;
 }) {
-  const q = (searchParams?.q || "").toString();
-  const status = (searchParams?.status || "").toString();
+  const params = searchParams ? await searchParams : {};
+  const rawQ = params?.q;
+  const rawStatus = params?.status;
+  const q = Array.isArray(rawQ) ? rawQ[0] ?? "" : rawQ ?? "";
+  const status = Array.isArray(rawStatus) ? rawStatus[0] ?? "" : rawStatus ?? "";
 
   let query = adminSupabase
     ?.from("products")

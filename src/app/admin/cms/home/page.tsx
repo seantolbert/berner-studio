@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AdminGuard from "@/app/admin/AdminGuard";
 import Button from "@/app/components/ui/Button";
 import SectionsManager from "@/app/admin/cms/home/SectionsManager";
@@ -19,7 +19,18 @@ export default function AdminHomePage() {
   const [secondaryLabel, setSecondaryLabel] = useState("");
   const [secondaryHref, setSecondaryHref] = useState("");
   const [imgErr, setImgErr] = useState<string | null>(null);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
+  const pendingObjectUrlRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (pendingObjectUrlRef.current) {
+        URL.revokeObjectURL(pendingObjectUrlRef.current);
+        pendingObjectUrlRef.current = null;
+      }
+    };
+  }, []);
   useEffect(() => {
     let aborted = false;
     (async () => {
@@ -32,6 +43,7 @@ export default function AdminHomePage() {
         setTitle(s.title || "");
         setSubtitle(s.subtitle || "");
         setImageUrl(s.image_url || "");
+        setPendingPreviewUrl(null);
         setPrimaryLabel(s.primary_label || "");
         setPrimaryHref(s.primary_href || "");
         setSecondaryLabel(s.secondary_label || "");
@@ -113,25 +125,42 @@ export default function AdminHomePage() {
                   />
                 </div>
 
-                <label className="flex flex-col gap-1 text-sm mt-3">
-                  <span>Hero image URL</span>
-                  <input
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://…"
-                    className="h-9 px-3 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
-                  />
-                </label>
+                <div className="mt-3 space-y-2">
+                  <div className="text-sm font-medium">Hero image</div>
+                  <div className="rounded-md border border-black/10 dark:border-white/10 overflow-hidden bg-black/5 dark:bg-white/5 flex items-center justify-center h-44">
+                    {pendingPreviewUrl || imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={pendingPreviewUrl || imageUrl}
+                        alt="Hero preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs opacity-70 px-3 text-center">No image uploaded yet.</span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2 mt-2">
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
+                  <input
+                    name="file"
+                    type="file"
+                    accept="image/*"
+                    className="text-sm"
+                    onChange={async (event) => {
+                      const file = event.currentTarget.files?.[0] ?? null;
+                      if (!file) return;
                       setImgErr(null);
+                      setUploadingHero(true);
+                      if (pendingObjectUrlRef.current) {
+                        URL.revokeObjectURL(pendingObjectUrlRef.current);
+                        pendingObjectUrlRef.current = null;
+                      }
+                      const localUrl = URL.createObjectURL(file);
+                      pendingObjectUrlRef.current = localUrl;
+                      setPendingPreviewUrl(localUrl);
+
                       try {
-                        const formEl = e.currentTarget as HTMLFormElement;
-                        const input = (formEl.elements.namedItem("file") as HTMLInputElement) || null;
-                        const file = input?.files?.[0];
-                        if (!file) throw new Error("Choose a file");
                         const fd = new FormData();
                         fd.set("file", file);
                         fd.set("slug", "homepage-hero");
@@ -139,21 +168,27 @@ export default function AdminHomePage() {
                         const data = await up.json();
                         if (!up.ok) throw new Error(data?.error || "Upload failed");
                         setImageUrl(data.url);
+                        if (pendingObjectUrlRef.current) {
+                          URL.revokeObjectURL(pendingObjectUrlRef.current);
+                          pendingObjectUrlRef.current = null;
+                        }
+                        setPendingPreviewUrl(data.url);
                         await fetch("/api/admin/home-hero", {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ image_url: data.url }),
                         });
-                        formEl.reset();
                       } catch (err: unknown) {
                         const message = err instanceof Error ? err.message : "Upload error";
                         setImgErr(message);
+                      } finally {
+                        setUploadingHero(false);
                       }
                     }}
-                  >
-                    <input name="file" type="file" accept="image/*" className="text-sm" />
-                    <Button type="submit" variant="ghost" size="sm" className="ml-2">Upload</Button>
-                  </form>
+                  />
+                  {uploadingHero && (
+                    <span className="text-xs opacity-70">Uploading…</span>
+                  )}
                   {imgErr && (
                     <div className="text-xs text-red-600 dark:text-red-400">{imgErr}</div>
                   )}

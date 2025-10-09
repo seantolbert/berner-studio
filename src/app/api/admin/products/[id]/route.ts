@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   const { id } = await ctx.params;
   const { data, error } = await adminSupabase
     .from("products")
-    .select("id, slug, name, price_cents, category, status, short_desc, long_desc, primary_image_url, tags, updated_at, created_at, product_template_id")
+    .select("id, slug, name, price_cents, category, status, short_desc, long_desc, primary_image_url, tags, updated_at, created_at, product_template_id, card_label")
     .eq("id", id)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -44,6 +44,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     tags: z.array(z.string()).optional(),
     slug: z.string().optional(),
     product_template_id: z.string().uuid().nullable().optional(),
+    card_label: z.string().max(60).nullable().optional(),
   });
   const jsonUnknown = await req.json().catch(() => undefined);
   const parsed = Body.safeParse(jsonUnknown);
@@ -59,6 +60,10 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (b.primary_image_url !== undefined) updates.primary_image_url = b.primary_image_url;
   if (b.tags) updates.tags = b.tags.map((t) => String(t));
   if (b.product_template_id !== undefined) updates.product_template_id = b.product_template_id;
+  if (b.card_label !== undefined) {
+    const trimmed = typeof b.card_label === "string" ? b.card_label.trim() : null;
+    updates.card_label = trimmed ? trimmed : null;
+  }
 
   // Handle slug change and record previous slug
   if (b.slug) {

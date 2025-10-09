@@ -46,15 +46,15 @@ export default function ExtrasFormControls({
   bare = false,
 }: {
   grooveEnabled: boolean;
-  setGrooveEnabled: (v: boolean | ((v: boolean) => boolean)) => void;
+  setGrooveEnabled: (_value: boolean | ((_prev: boolean) => boolean)) => void;
   edgeProfile: EdgeProfile;
-  setEdgeProfile: (v: EdgeProfile) => void;
+  setEdgeProfile: (_value: EdgeProfile) => void;
   borderRadius: number;
-  setBorderRadius: (v: number) => void;
+  setBorderRadius: (_value: number) => void;
   chamferSize: number;
-  setChamferSize: (v: number) => void;
+  setChamferSize: (_value: number) => void;
   edgeOption: string;
-  setEdgeOption: (v: string) => void;
+  setEdgeOption: (_value: string) => void;
   topRowColors: (string | null)[];
   cornerColors2x2: (string | null)[][];
   bare?: boolean;
@@ -67,22 +67,22 @@ export default function ExtrasFormControls({
   const content = (
     <div className="grid gap-4">
       {/* Juice groove toggle */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="text-sm font-medium">Juice groove</div>
           <div className="text-xs text-foreground/70">Adds a carved channel to catch liquids.</div>
         </div>
-        <button
-          type="button"
-          onClick={() => setGrooveEnabled((v: boolean) => !v)}
-          className={`h-9 px-3 rounded-md border ${
-            grooveEnabled
-              ? "border-emerald-500 text-emerald-700 dark:text-emerald-400"
-              : "border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-          }`}
-        >
-          {grooveEnabled ? "Enabled" : "Disabled"}
-        </button>
+        <label className="relative inline-flex h-7 w-12 cursor-pointer items-center">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={grooveEnabled}
+            onChange={(event) => setGrooveEnabled(event.target.checked)}
+            aria-label="Toggle juice groove"
+          />
+          <span className="absolute inset-0 rounded-full bg-black/15 transition-colors peer-checked:bg-emerald-600 dark:bg-white/25" />
+          <span className="absolute left-0.5 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-5 peer-checked:bg-white" />
+        </label>
       </div>
 
       {/* Corner presets */}

@@ -82,118 +82,132 @@ function normalizeProduct(row: Record<string, unknown>): HomeSectionProduct | nu
   const priceRaw = Number(row.price_cents);
   const price = Number.isFinite(priceRaw) ? Math.max(0, Math.round(priceRaw)) : 0;
   const image = typeof row.primary_image_url === "string" && row.primary_image_url.trim().length > 0 ? row.primary_image_url : null;
-  return { slug, name, price_cents: price, primary_image_url: image };
+  const cardLabel =
+    typeof row.card_label === "string" && row.card_label.trim().length > 0 ? row.card_label : null;
+  const tagsRaw = Array.isArray(row.tags) ? row.tags : [];
+  const tags = tagsRaw
+    .map((value) => (typeof value === "string" ? value : null))
+    .filter((value): value is string => Boolean(value));
+  return { slug, name, price_cents: price, primary_image_url: image, card_label: cardLabel, tags };
 }
 
 export async function getHomeHero(): Promise<HomeHero | null> {
-  const { data, error } = await supabaseAnon
-    .from("home_hero")
-    .select("title,subtitle,image_url,primary_label,primary_href,secondary_label,secondary_href")
-    .maybeSingle();
-  if (error) throw error;
-  return normalizeHero(data as Record<string, unknown> | null);
+  try {
+    const { data, error } = await supabaseAnon
+      .from("home_hero")
+      .select("title,subtitle,image_url,primary_label,primary_href,secondary_label,secondary_href")
+      .maybeSingle();
+    if (error) return null;
+    return normalizeHero(data as Record<string, unknown> | null);
+  } catch {
+    return null;
+  }
 }
 
 export async function getHomeSections(): Promise<HomeSection[]> {
-  const { data, error } = await supabaseAnon
-    .from("home_sections")
-    .select("id,title,subtext,view_all_label,view_all_href,max_items,position,category")
-    .order("position", { ascending: true });
-  if (error) throw error;
-  const baseRows = (data ?? []) as Array<Record<string, unknown>>;
-  const sections = baseRows
-    .map((row) => normalizeSection(row))
-    .filter((row): row is HomeSection => Boolean(row));
-  if (sections.length === 0) return [];
+  try {
+    const { data, error } = await supabaseAnon
+      .from("home_sections")
+      .select("id,title,subtext,view_all_label,view_all_href,max_items,position,category")
+      .order("position", { ascending: true });
+    if (error) return [];
+    const baseRows = (data ?? []) as Array<Record<string, unknown>>;
+    const sections = baseRows
+      .map((row) => normalizeSection(row))
+      .filter((row): row is HomeSection => Boolean(row));
+    if (sections.length === 0) return [];
 
-  const sectionById = new Map(sections.map((section) => [section.id, section]));
-  const sectionIds = sections.map((section) => section.id);
+    const sectionById = new Map(sections.map((section) => [section.id, section]));
+    const sectionIds = sections.map((section) => section.id);
 
-  const [{ data: linkData, error: linkError }, { data: collectionData, error: collectionError }] = await Promise.all([
-    supabaseAnon
-      .from("home_section_products")
-      .select("section_id,product_id,position")
-      .in("section_id", sectionIds)
-      .order("position", { ascending: true }),
-    supabaseAnon
-      .from("home_section_collections")
-      .select("section_id,label,href,position")
-      .in("section_id", sectionIds)
-      .order("position", { ascending: true }),
-  ]);
-  if (linkError) throw linkError;
-  if (collectionError) throw collectionError;
+    const [{ data: linkData, error: linkError }, { data: collectionData, error: collectionError }] = await Promise.all([
+      supabaseAnon
+        .from("home_section_products")
+        .select("section_id,product_id,position")
+        .in("section_id", sectionIds)
+        .order("position", { ascending: true }),
+      supabaseAnon
+        .from("home_section_collections")
+        .select("section_id,label,href,position")
+        .in("section_id", sectionIds)
+        .order("position", { ascending: true }),
+    ]);
+    if (linkError || collectionError) return [];
 
-  const productLinks = ((linkData as Array<Record<string, unknown>> | null) ?? [])
-    .map((row) => normalizeSectionProductLink(row))
-    .filter((row): row is SectionProductLink => Boolean(row));
+    const productLinks = ((linkData as Array<Record<string, unknown>> | null) ?? [])
+      .map((row) => normalizeSectionProductLink(row))
+      .filter((row): row is SectionProductLink => Boolean(row));
 
-  const collectionMap = new Map<string, HomeSectionCollection[]>();
-  for (const entry of ((collectionData as Array<Record<string, unknown>> | null) ?? [])) {
-    const normalized = normalizeSectionCollection(entry);
-    if (!normalized) continue;
-    const bucket = collectionMap.get(normalized.sectionId);
-    if (bucket) bucket.push(normalized.collection);
-    else collectionMap.set(normalized.sectionId, [normalized.collection]);
-  }
+    const collectionMap = new Map<string, HomeSectionCollection[]>();
+    for (const entry of ((collectionData as Array<Record<string, unknown>> | null) ?? [])) {
+      const normalized = normalizeSectionCollection(entry);
+      if (!normalized) continue;
+      const bucket = collectionMap.get(normalized.sectionId);
+      if (bucket) bucket.push(normalized.collection);
+      else collectionMap.set(normalized.sectionId, [normalized.collection]);
+    }
 
-  const productIds = Array.from(new Set(productLinks.map((link) => link.productId)));
-  const productsById = new Map<string, HomeSectionProduct>();
-  if (productIds.length > 0) {
-    const { data: productsData, error: productsError } = await supabaseAnon
-      .from("products")
-      .select("id,slug,name,price_cents,primary_image_url,status,deleted_at")
-      .in("id", productIds)
-      .eq("status", "published")
-      .is("deleted_at", null);
-    if (productsError) throw productsError;
-    for (const row of (productsData as Array<Record<string, unknown>> | null) ?? []) {
-      const normalized = normalizeProduct(row);
-      const id = toStringId(row.id);
-      if (normalized && id) {
-        productsById.set(id, normalized);
+    const productIds = Array.from(new Set(productLinks.map((link) => link.productId)));
+    const productsById = new Map<string, HomeSectionProduct>();
+    if (productIds.length > 0) {
+      const { data: productsData, error: productsError } = await supabaseAnon
+        .from("products")
+        .select("id,slug,name,price_cents,primary_image_url,status,deleted_at,card_label,tags")
+        .in("id", productIds)
+        .eq("status", "published")
+        .is("deleted_at", null);
+      if (!productsError) {
+        for (const row of (productsData as Array<Record<string, unknown>> | null) ?? []) {
+          const normalized = normalizeProduct(row);
+          const id = toStringId(row.id);
+          if (normalized && id) {
+            productsById.set(id, normalized);
+          }
+        }
       }
     }
-  }
 
-  const productsBySection = new Map<string, HomeSectionProduct[]>();
-  for (const link of productLinks) {
-    const product = productsById.get(link.productId);
-    if (!product) continue;
-    const list = productsBySection.get(link.sectionId);
-    if (list) list.push(product);
-    else productsBySection.set(link.sectionId, [product]);
-  }
-
-  sections.forEach((section) => {
-    section.collections = collectionMap.get(section.id) ?? [];
-    section.products = productsBySection.get(section.id) ?? [];
-  });
-
-  const sectionsWithCategory = sections.filter((section) => section.category);
-  if (sectionsWithCategory.length > 0) {
-    const categoryResults = await Promise.all(
-      sectionsWithCategory.map(async (section) => {
-        const { data: productsData, error: productsError } = await supabaseAnon
-          .from("products")
-          .select("slug,name,price_cents,primary_image_url,status,deleted_at,category")
-          .eq("category", section.category!)
-          .eq("status", "published")
-          .is("deleted_at", null)
-          .order("updated_at", { ascending: false })
-          .limit(Math.max(DEFAULT_MAX_ITEMS, section.max_items));
-        if (productsError) throw productsError;
-        const items = ((productsData as Array<Record<string, unknown>> | null) ?? [])
-          .map((row) => normalizeProduct(row))
-          .filter((row): row is HomeSectionProduct => Boolean(row));
-        return { sectionId: section.id, items };
-      })
-    );
-    for (const result of categoryResults) {
-      const section = sectionById.get(result.sectionId);
-      if (section) section.products = result.items;
+    const productsBySection = new Map<string, HomeSectionProduct[]>();
+    for (const link of productLinks) {
+      const product = productsById.get(link.productId);
+      if (!product) continue;
+      const list = productsBySection.get(link.sectionId);
+      if (list) list.push(product);
+      else productsBySection.set(link.sectionId, [product]);
     }
-  }
 
-  return sections;
+    sections.forEach((section) => {
+      section.collections = collectionMap.get(section.id) ?? [];
+      section.products = productsBySection.get(section.id) ?? [];
+    });
+
+    const sectionsWithCategory = sections.filter((section) => section.category);
+    if (sectionsWithCategory.length > 0) {
+      const categoryResults = await Promise.all(
+        sectionsWithCategory.map(async (section) => {
+          const { data: productsData, error: productsError } = await supabaseAnon
+            .from("products")
+            .select("slug,name,price_cents,primary_image_url,status,deleted_at,category,card_label,tags")
+            .eq("category", section.category!)
+            .eq("status", "published")
+            .is("deleted_at", null)
+            .order("updated_at", { ascending: false })
+            .limit(Math.max(DEFAULT_MAX_ITEMS, section.max_items));
+          if (productsError) return { sectionId: section.id, items: [] };
+          const items = ((productsData as Array<Record<string, unknown>> | null) ?? [])
+            .map((row) => normalizeProduct(row))
+            .filter((row): row is HomeSectionProduct => Boolean(row));
+          return { sectionId: section.id, items };
+        })
+      );
+      for (const result of categoryResults) {
+        const section = sectionById.get(result.sectionId);
+        if (section) section.products = result.items;
+      }
+    }
+
+    return sections;
+  } catch {
+    return [];
+  }
 }

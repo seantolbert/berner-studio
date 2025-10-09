@@ -10,6 +10,8 @@ export type ProductItem = {
   name: string;
   price_cents: number;
   primary_image_url: string | null;
+  card_label: string | null;
+  tags?: string[] | null;
 };
 
 export default function ProductCard({ item }: { item: ProductItem }) {
@@ -42,6 +44,11 @@ export default function ProductCard({ item }: { item: ProductItem }) {
         )}
       </Link>
       <div className="p-3">
+        {item.card_label ? (
+          <div className="text-[11px] uppercase tracking-wide font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+            {item.card_label}
+          </div>
+        ) : null}
         <div className="text-sm font-medium truncate">{item.name}</div>
         <div className="text-xs opacity-70">{formatCurrencyCents(item.price_cents)}</div>
         <div className="mt-2 flex gap-2">

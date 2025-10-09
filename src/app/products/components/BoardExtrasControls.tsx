@@ -7,7 +7,7 @@ import type { BoardSize } from "@/types/board";
 
 type BoardExtrasControlsProps = {
   boardSize: BoardSize;
-  onBoardSizeChange: (size: BoardSize) => void;
+  onBoardSizeChange: (_size: BoardSize) => void;
   grooveEnabled: boolean;
   setGrooveEnabled: Dispatch<SetStateAction<boolean>>;
   edgeProfile: "square" | "chamfer" | "roundover";
@@ -22,7 +22,7 @@ type BoardExtrasControlsProps = {
   cornerColors2x2: (string | null)[][];
   stripSampleOption: "none" | "glide" | "lift";
   setStripSampleOption: Dispatch<SetStateAction<"none" | "glide" | "lift">>;
-  handleEnabled: (opt: "none" | "glide" | "lift") => boolean;
+  handleEnabled: (_option: "none" | "glide" | "lift") => boolean;
   brassFeet: boolean;
   setBrassFeet: Dispatch<SetStateAction<boolean>>;
   showHandleControls?: boolean;
@@ -201,25 +201,20 @@ export function BoardExtrasControls({
               <div className="text-sm font-medium">Brass feet</div>
               <div className="text-xs text-foreground/70">Adds brass feet hardware to lift the board off the counter.</div>
             </div>
-              <button
-                type="button"
-                aria-pressed={brassFeet}
-                onClick={() => setBrassFeet(!brassFeet)}
-                className={`h-6 w-11 rounded-full border border-black/15 dark:border-white/15 relative transition-colors ${
-                  brassFeet ? "bg-emerald-600" : "bg-white/60 dark:bg-black/30"
-                }`}
+            <label className="relative inline-flex h-7 w-12 cursor-pointer items-center">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={brassFeet}
+                onChange={(event) => setBrassFeet(event.target.checked)}
                 aria-label="Toggle brass feet"
-              >
-                <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    brassFeet ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                  aria-hidden
-                />
-              </button>
-            </div>
-          )}
-        </div>
+              />
+              <span className="absolute inset-0 rounded-full bg-black/15 transition-colors peer-checked:bg-emerald-600 dark:bg-white/25" />
+              <span className="absolute left-0.5 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-5 peer-checked:bg-white" />
+            </label>
+          </div>
+        )}
+      </div>
       )}
     </div>
   );

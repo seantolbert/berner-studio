@@ -18,6 +18,8 @@ export type HomeSectionProduct = {
   name: string;
   price_cents: number;
   primary_image_url: string | null;
+  card_label: string | null;
+  tags: string[];
 };
 
 export type HomeSection = {

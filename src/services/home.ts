@@ -183,16 +183,23 @@ export async function getHomeSections(): Promise<HomeSection[]> {
 
     const sectionsWithCategory = sections.filter((section) => section.category);
     if (sectionsWithCategory.length > 0) {
-      const categoryResults = await Promise.all(
-        sectionsWithCategory.map(async (section) => {
-          const { data: productsData, error: productsError } = await supabaseAnon
-            .from("products")
-            .select("slug,name,price_cents,primary_image_url,status,deleted_at,category,card_label,tags")
-            .eq("category", section.category!)
-            .eq("status", "published")
-            .is("deleted_at", null)
-            .order("updated_at", { ascending: false })
-            .limit(Math.max(DEFAULT_MAX_ITEMS, section.max_items));
+    const categoryResults = await Promise.all(
+      sectionsWithCategory.map(async (section) => {
+        const collectionCount = collectionMap.get(section.id)?.length ?? 0;
+        const limit = Math.max(
+          DEFAULT_MAX_ITEMS,
+          section.max_items,
+          collectionCount > 0 ? collectionCount * 6 : 0,
+          24
+        );
+        const { data: productsData, error: productsError } = await supabaseAnon
+          .from("products")
+          .select("slug,name,price_cents,primary_image_url,status,deleted_at,category,card_label,tags")
+          .eq("category", section.category!)
+          .eq("status", "published")
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          .limit(limit);
           if (productsError) return { sectionId: section.id, items: [] };
           const items = ((productsData as Array<Record<string, unknown>> | null) ?? [])
             .map((row) => normalizeProduct(row))

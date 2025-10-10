@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setDynamicWoods } from "@/app/board-builder/components/woods";
 import CostSummary from "@/app/board-builder/components/CostSummary";
@@ -59,8 +59,8 @@ export function ProductPageShell({ loading, product, variants, images, template 
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   useEffect(() => {
-    setAssignedTemplate(template);
-  }, [template?.id]);
+    setAssignedTemplate(template ?? null);
+  }, [product?.id, template]);
 
   useEffect(() => {
     setLocalImages(images);
@@ -70,8 +70,10 @@ export function ProductPageShell({ loading, product, variants, images, template 
   useEffect(() => {
     if (assignedTemplate) {
       setBoardSize(assignedTemplate.size === "small" ? "small" : "regular");
+    } else {
+      setBoardSize("regular");
     }
-  }, [assignedTemplate?.size]);
+  }, [assignedTemplate, product]);
 
   useEffect(() => {
     let active = true;
@@ -86,60 +88,36 @@ export function ProductPageShell({ loading, product, variants, images, template 
     return () => {
       active = false;
     };
-  }, [assignedTemplate]);
+  }, [assignedTemplate, product]);
 
   useEffect(() => {
-    if (!template) return;
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem("bs_current_config") : null;
-      if (!raw) return;
-      const cfg = JSON.parse(raw);
-      if (!cfg || !cfg.boardData) return;
-      const strips = Array.isArray(cfg.boardData.strips)
-        ? cfg.boardData.strips.map((row: unknown) =>
-            Array.isArray(row)
-              ? row.map((cell) => (typeof cell === "string" ? cell : null))
-              : []
-          )
-        : [];
-      const order = Array.isArray(cfg.boardData.order)
-        ? cfg.boardData.order.map((entry: unknown) => {
-            if (!entry || typeof entry !== "object") {
-              return { stripNo: 1, reflected: false };
-            }
-            const rawOrder = entry as { stripNo?: unknown; reflected?: unknown };
-            const stripNoRaw = Number(rawOrder.stripNo);
-            const stripNo = Number.isFinite(stripNoRaw) ? Math.max(1, Math.round(stripNoRaw)) : 1;
-            return { stripNo, reflected: Boolean(rawOrder.reflected) };
-          })
-        : [];
-      setAssignedTemplate({
-        id: "local",
-        name: "Custom",
-        size: cfg.size === "small" ? "small" : "regular",
-        strip3Enabled: Boolean(cfg.strip3Enabled),
-        layout: { strips, order },
-      });
-      if (typeof cfg.price === "number") {
-        setCustomPrice(Math.max(0, Math.round(cfg.price)));
-      } else if (cfg.breakdown && typeof cfg.breakdown.total === "number") {
-        setCustomPrice(Math.max(0, Math.round(cfg.breakdown.total)));
-      }
-    } catch {}
-  }, [template]);
+    if (!product) return;
+    setCustomPrice(null);
+    setGrooveEnabled(false);
+    setEdgeProfile("square");
+    setBorderRadius(0);
+    setChamferSize(8);
+    setEdgeOption(DEFAULT_EDGE_OPTION);
+    setStripSampleOption("none");
+    setBrassFeet(false);
+    setAdded(false);
+  }, [product]);
 
-  const handleEnabled = (opt: "none" | "glide" | "lift") => {
-    const eo = (edgeOption || "").toLowerCase();
-    if (eo === "double_chamfer") return opt === "none";
-    if (eo === "diamond" || eo === "flat_top") return opt !== "glide";
-    return true;
-  };
+  const handleEnabled = useCallback(
+    (opt: "none" | "glide" | "lift") => {
+      const eo = (edgeOption || "").toLowerCase();
+      if (eo === "double_chamfer") return opt === "none";
+      if (eo === "diamond" || eo === "flat_top") return opt !== "glide";
+      return true;
+    },
+    [edgeOption]
+  );
 
   useEffect(() => {
     if (!handleEnabled(stripSampleOption)) {
       setStripSampleOption("none");
     }
-  }, [edgeOption]);
+  }, [edgeOption, handleEnabled, stripSampleOption]);
 
   useEffect(() => {
     if (!product) {
@@ -155,7 +133,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
         setSelectedSize(matchingSize);
       }
     }
-  }, [product?.id, product?.category, variants]);
+  }, [product, variants]);
 
   const gallery = useMemo(() => {
     const byColor = selectedColor
@@ -203,6 +181,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
   }, [grooveEnabled, brassFeet]);
 
   const boardPricing = useMemo(() => {
+    void pricingVersion;
     if (!product || product.category !== "boards" || !assignedTemplate) return null;
     const sizeKey: BoardSize = boardSize === "regular" ? "regular" : "small";
     const { base, variable, cellCount, extrasThirdStrip = 0 } = calculateBoardPrice({

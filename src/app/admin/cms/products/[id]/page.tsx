@@ -66,6 +66,7 @@ export default function EditProductPage() {
   const [uploadAlt, setUploadAlt] = useState("");
   const [uploadColor, setUploadColor] = useState<string>("");
   const [imageColorFilter, setImageColorFilter] = useState<string>("");
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
   // Variants (apparel)
   type VariantRow = { include: boolean; color: string; size: string; sku: string; price_cents_override?: string; status: 'draft'|'published' };
@@ -108,6 +109,23 @@ export default function EditProductPage() {
       setImgError(message);
     } finally {
       setImgLoading(false);
+    }
+  }
+
+  async function handleDeleteImage(imageId: string) {
+    if (!confirm("Remove this image?")) return;
+    setImgError(null);
+    setDeletingImageId(imageId);
+    try {
+      const res = await fetch(`/api/admin/products/${id}/images/${imageId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed to delete image");
+      await refreshImages();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unexpected error";
+      setImgError(message);
+    } finally {
+      setDeletingImageId(null);
     }
   }
 
@@ -593,7 +611,7 @@ export default function EditProductPage() {
                           <div className="p-2 space-y-1">
                             <div className="text-xs truncate" title={im.alt || undefined}>{im.alt || <span className="opacity-60">(no alt)</span>}</div>
                             <div className="text-[11px] opacity-70">Color: {im.color || '—'}</div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               {!im.is_primary ? (
                                 <button
                                   className="h-7 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs"
@@ -640,21 +658,11 @@ export default function EditProductPage() {
                                 Set color
                               </button>
                               <button
-                                className="h-7 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs"
-                                onClick={async () => {
-                                  setImgError(null);
-                                  try {
-                                    const res = await fetch(`/api/admin/products/${id}/images/${im.id}`, { method: "DELETE" });
-                                    const data = await res.json();
-                                    if (!res.ok) throw new Error(data?.error || "Failed to delete");
-                                    await refreshImages();
-                                  } catch (err: unknown) {
-                                    const message = err instanceof Error ? err.message : "Unexpected error";
-                                    setImgError(message);
-                                  }
-                                }}
+                                className="h-7 px-2 rounded-md border border-red-200 text-xs text-red-600 dark:border-red-500/40 dark:text-red-300"
+                                disabled={deletingImageId === im.id}
+                                onClick={() => handleDeleteImage(im.id)}
                               >
-                                Delete
+                                {deletingImageId === im.id ? "Deleting…" : "Delete"}
                               </button>
                             </div>
                           </div>

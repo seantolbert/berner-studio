@@ -51,14 +51,6 @@ export default function ProductCard({ item }: { item: ProductItem }) {
         ) : null}
         <div className="text-sm font-medium truncate">{item.name}</div>
         <div className="text-xs opacity-70">{formatCurrencyCents(item.price_cents)}</div>
-        <div className="mt-2 flex gap-2">
-          <Link
-            href={`/products/${item.slug}`}
-            className="inline-flex h-8 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-sm"
-          >
-            View
-          </Link>
-        </div>
       </div>
     </div>
   );

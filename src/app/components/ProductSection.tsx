@@ -51,9 +51,10 @@ export default function ProductSection({
   viewAll,
   collections,
   products,
-  maxItems = 3,
+  maxItems: _maxItems = 3,
   className = "",
 }: ProductSectionProps) {
+  void _maxItems;
   const [activeCollection, setActiveCollection] = useState<string | null>(null);
   const normalizedCollections =
     collections?.map((collection) => ({
@@ -71,8 +72,9 @@ export default function ProductSection({
     return products;
   }, [products, activeCollection]);
 
-  const limit = activeCollection ? 3 : Math.max(3, maxItems);
-  const items = filteredProducts.slice(0, limit);
+  const mobileLimit = Math.min(4, filteredProducts.length);
+  const items = filteredProducts.slice(0, mobileLimit);
+  const desktopVisible = 3;
   const viewAllAction =
     viewAll && (viewAll.href ? { href: viewAll.href } : viewAll.onClick ? { onClick: viewAll.onClick } : null);
   return (
@@ -112,8 +114,10 @@ export default function ProductSection({
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {items.map((p) => (
-            <ProductCard key={p.slug} item={p} />
+          {items.map((p, idx) => (
+            <div key={p.slug} className={idx >= desktopVisible ? "md:hidden" : ""}>
+              <ProductCard item={p} />
+            </div>
           ))}
         </div>
       </div>

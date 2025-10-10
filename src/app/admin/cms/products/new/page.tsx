@@ -34,15 +34,29 @@ export default function NewProductPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imgAlt, setImgAlt] = useState("");
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<Array<{ file: File; url: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const selectedImagesRef = useRef<Array<{ file: File; url: string }>>([]);
+
+  const updateFileInputFiles = (items: Array<{ file: File; url: string }>) => {
+    if (!fileInputRef.current) return;
+    const dt = new DataTransfer();
+    items.forEach(({ file }) => dt.items.add(file));
+    fileInputRef.current.files = dt.files;
+    if (items.length === 0) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  useEffect(() => {
+    selectedImagesRef.current = selectedImages;
+  }, [selectedImages]);
 
   useEffect(() => {
     return () => {
-      // Revoke any existing object URLs on unmount
-      previewUrls.forEach((u) => URL.revokeObjectURL(u));
+      selectedImagesRef.current.forEach((item) => URL.revokeObjectURL(item.url));
     };
-  }, [previewUrls]);
+  }, []);
 
   // Load available collections from home sections
   useEffect(() => {
@@ -97,10 +111,7 @@ export default function NewProductPage() {
     setSubmitting(true);
     const price_cents = Math.round(Number(price || 0) * 100);
     try {
-      const form = e.currentTarget as HTMLFormElement;
-      const fileInput = (form.elements.namedItem("files") as HTMLInputElement) || null;
-      const list = fileInput?.files;
-      const pickedFiles: File[] = list && list.length ? (Array.from(list) as File[]) : [];
+      const pickedFiles: File[] = selectedImages.map((item) => item.file);
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -329,26 +340,44 @@ export default function NewProductPage() {
                   multiple
                   className="text-sm"
                   onChange={(e) => {
-                    // Revoke old previews
-                    previewUrls.forEach((u) => URL.revokeObjectURL(u));
+                    selectedImagesRef.current.forEach((item) => URL.revokeObjectURL(item.url));
                     const files = e.target.files ? Array.from(e.target.files) : [];
-                    const urls = files.map((f) => URL.createObjectURL(f));
-                    setPreviewUrls(urls);
+                    const mapped = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
+                    setSelectedImages(mapped);
+                    updateFileInputFiles(mapped);
                   }}
                 />
                 <span className="text-[11px] opacity-70">JPG/PNG/WebP up to 5MB each</span>
-                {previewUrls.length > 0 && (
+                {selectedImages.length > 0 && (
                   <div className="mt-2 grid grid-cols-5 gap-2">
-                    {previewUrls.map((u, idx) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={idx} src={u} alt={`Preview ${idx + 1}`} className="h-16 w-16 object-cover rounded border border-black/10 dark:border-white/10" />
+                    {selectedImages.map((item, idx) => (
+                      <div key={item.url} className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.url} alt={`Preview ${idx + 1}`} className="h-16 w-16 object-cover rounded border border-black/10 dark:border-white/10" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedImages((prev) => {
+                              const next = prev.filter((_, index) => index !== idx);
+                              const removed = prev[idx];
+                              if (removed) URL.revokeObjectURL(removed.url);
+                              updateFileInputFiles(next);
+                              return next;
+                            });
+                          }}
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-black/80 text-white text-xs flex items-center justify-center"
+                          aria-label={`Remove preview ${idx + 1}`}
+                        >
+                          ×
+                        </button>
+                      </div>
                     ))}
                     <button
                       type="button"
                       onClick={() => {
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                        previewUrls.forEach((u) => URL.revokeObjectURL(u));
-                        setPreviewUrls([]);
+                        selectedImagesRef.current.forEach((item) => URL.revokeObjectURL(item.url));
+                        setSelectedImages([]);
+                        updateFileInputFiles([]);
                       }}
                       className="h-8 px-2 rounded-md border border-black/10 dark:border-white/10 text-xs"
                     >

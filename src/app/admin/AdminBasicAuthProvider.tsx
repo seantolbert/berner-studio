@@ -101,7 +101,8 @@ export default function AdminBasicAuthProvider({ children }: { children: React.R
       if (input instanceof Request) {
         return baseFetch(new Request(input, requestInit));
       }
-      return baseFetch(input as any, requestInit);
+      const requestInput: RequestInfo | URL = input;
+      return baseFetch(requestInput, requestInit);
     };
 
     return () => {

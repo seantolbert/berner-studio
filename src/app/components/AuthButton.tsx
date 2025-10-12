@@ -14,12 +14,12 @@ export default function AuthButton() {
   const [err, setErr] = useState<string | null>(null);
 
   const signIn = useCallback(async (provider: "github" | "google") => {
-    const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-    const creds: Parameters<typeof supabase.auth.signInWithOAuth>[0] = { provider } as any;
-    if (redirectTo) {
-      (creds as any).options = { redirectTo };
-    }
-    await supabase.auth.signInWithOAuth(creds);
+    const redirectTo =
+      typeof window !== "undefined" ? window.location.origin : undefined;
+    const oauthConfig: Parameters<typeof supabase.auth.signInWithOAuth>[0] = redirectTo
+      ? { provider, options: { redirectTo } }
+      : { provider };
+    await supabase.auth.signInWithOAuth(oauthConfig);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -31,16 +31,17 @@ export default function AuthButton() {
     setSending(true);
     setSent(false);
     try {
-      const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-      const otpArgs: Parameters<typeof supabase.auth.signInWithOtp>[0] = { email } as any;
-      if (redirectTo) {
-        (otpArgs as any).options = { emailRedirectTo: redirectTo };
-      }
+      const redirectTo =
+        typeof window !== "undefined" ? window.location.origin : undefined;
+      const otpArgs: Parameters<typeof supabase.auth.signInWithOtp>[0] = redirectTo
+        ? { email, options: { emailRedirectTo: redirectTo } }
+        : { email };
       const { error } = await supabase.auth.signInWithOtp(otpArgs);
       if (error) throw error;
       setSent(true);
-    } catch (e: any) {
-      setErr(e?.message || "Failed to send link");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to send link";
+      setErr(message);
     } finally {
       setSending(false);
     }

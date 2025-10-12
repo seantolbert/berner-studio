@@ -9,9 +9,9 @@ type Props = {
     order: { stripNo: number; reflected: boolean }[];
   };
   size: "small" | "regular" | "large";
-  onReverseRow?: (rowIndex: number) => void;
+  onReverseRow?: (_rowIndex: number) => void;
   strip3Enabled?: boolean;
-  onChangeRowStrip?: (rowIndex: number, stripNo: number) => void;
+  onChangeRowStrip?: (_rowIndex: number, _stripNo: number) => void;
   interactive?: boolean;
   minimal?: boolean; // for extras page: no bg, no labels, no gaps
 };
@@ -114,7 +114,7 @@ export default function BoardPreview({
                       selected={selectedRow === i}
                       deselecting={deselectingRows.has(i)}
                       compact={minimal}
-                      {...(interactive ? { onClick: (_idx: number) => handleClick() } : {})}
+                      {...(interactive ? { onClick: handleClick } : {})}
                       onTransitionEnd={handleTransitionEnd}
                     />
                     {!minimal && (

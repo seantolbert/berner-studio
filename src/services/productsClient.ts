@@ -2,131 +2,19 @@ import { supabase } from "@/lib/supabase/client";
 import type {
   ProductSummary,
   ProductDetail,
-  ProductCore,
-  ProductImage,
-  ProductVariant,
-  ProductTemplateDetail,
   ProductCategory,
   ProductSort,
+  ProductImage,
+  ProductVariant,
 } from "@/types/product";
-import type { BoardLayout, BoardRowOrder, BoardSize } from "@/types/board";
-
-const BOARD_SIZES: ReadonlyArray<BoardSize> = ["small", "regular", "large"] as const;
-
-function toBoardSize(value: unknown): BoardSize {
-  if (typeof value === "string" && BOARD_SIZES.includes(value as BoardSize)) {
-    return value as BoardSize;
-  }
-  return "regular";
-}
-
-function toBoardRowOrders(value: unknown): BoardRowOrder[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((entry) => {
-      if (!entry || typeof entry !== "object") return null;
-      const raw = entry as { stripNo?: unknown; reflected?: unknown };
-      const stripNoRaw = Number(raw.stripNo);
-      const stripNo = Number.isFinite(stripNoRaw) ? Math.max(1, Math.round(stripNoRaw)) : 1;
-      return {
-        stripNo,
-        reflected: Boolean(raw.reflected),
-      } satisfies BoardRowOrder;
-    })
-    .filter((entry): entry is BoardRowOrder => Boolean(entry));
-}
-
-function toBoardStrips(value: unknown): BoardLayout["strips"] {
-  if (!Array.isArray(value)) return [];
-  return value.map((row) => {
-    if (!Array.isArray(row)) return [];
-    return row.map((cell) => (typeof cell === "string" ? cell : null));
-  });
-}
-
-function normalizeProductSummary(row: Record<string, unknown>): ProductSummary | null {
-  const slug = typeof row.slug === "string" ? row.slug : null;
-  const name = typeof row.name === "string" ? row.name : null;
-  if (!slug || !name) return null;
-  const priceRaw = Number(row.price_cents);
-  const price = Number.isFinite(priceRaw) ? Math.max(0, Math.round(priceRaw)) : 0;
-  const image = typeof row.primary_image_url === "string" ? row.primary_image_url : null;
-  const cardLabel =
-    typeof row.card_label === "string" && row.card_label.trim().length > 0 ? row.card_label : null;
-  return { slug, name, price_cents: price, primary_image_url: image, card_label: cardLabel };
-}
-
-function normalizeProductCore(row: Record<string, unknown>): ProductCore | null {
-  const id = typeof row.id === "string" ? row.id : toString(row.id);
-  const slug = typeof row.slug === "string" ? row.slug : null;
-  const name = typeof row.name === "string" ? row.name : null;
-  if (!id || !slug || !name) return null;
-  const priceRaw = Number(row.price_cents);
-  const price = Number.isFinite(priceRaw) ? Math.max(0, Math.round(priceRaw)) : 0;
-  const category = typeof row.category === "string" ? row.category : null;
-  const status = typeof row.status === "string" ? row.status : "draft";
-  const primaryImage = typeof row.primary_image_url === "string" ? row.primary_image_url : null;
-  const shortDesc = typeof row.short_desc === "string" ? row.short_desc : null;
-  const longDesc = typeof row.long_desc === "string" ? row.long_desc : null;
-  const cardLabel =
-    typeof row.card_label === "string" && row.card_label.trim().length > 0 ? row.card_label : null;
-  return {
-    id,
-    slug,
-    name,
-    price_cents: price,
-    category,
-    status,
-    primary_image_url: primaryImage,
-    short_desc: shortDesc,
-    long_desc: longDesc,
-    card_label: cardLabel,
-  };
-}
-
-function normalizeVariant(row: Record<string, unknown>): ProductVariant | null {
-  const id = typeof row.id === "string" ? row.id : toString(row.id);
-  if (!id) return null;
-  const color = typeof row.color === "string" ? row.color : null;
-  const size = typeof row.size === "string" ? row.size : null;
-  const sku = typeof row.sku === "string" ? row.sku : null;
-  const priceOverrideRaw = Number(row.price_cents_override);
-  const priceOverride = Number.isFinite(priceOverrideRaw) ? Math.round(priceOverrideRaw) : null;
-  const statusVal = typeof row.status === "string" ? row.status : "draft";
-  const status = statusVal === "published" ? "published" : "draft";
-  return { id, color, size, sku, price_cents_override: priceOverride, status };
-}
-
-function normalizeImage(row: Record<string, unknown>): ProductImage | null {
-  const id = typeof row.id === "string" ? row.id : toString(row.id);
-  const url = typeof row.url === "string" ? row.url : null;
-  if (!id || !url) return null;
-  const alt = typeof row.alt === "string" ? row.alt : null;
-  const color = typeof row.color === "string" ? row.color : null;
-  return { id, url, alt, color };
-}
-
-function normalizeTemplate(row: Record<string, unknown>): ProductTemplateDetail | null {
-  const id = typeof row.id === "string" ? row.id : toString(row.id);
-  if (!id) return null;
-  const name = typeof row.name === "string" ? row.name : "Template";
-  const size = toBoardSize(row.size);
-  const strips = toBoardStrips((row as { strips?: unknown }).strips);
-  const order = toBoardRowOrders((row as { order?: unknown }).order);
-  return {
-    id,
-    name,
-    size,
-    strip3Enabled: Boolean(row.strip3_enabled),
-    layout: { strips, order },
-  };
-}
-
-function toString(value: unknown): string | null {
-  if (typeof value === "string") return value;
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  return null;
-}
+import {
+  ensureString,
+  normalizeImage,
+  normalizeProductCore,
+  normalizeProductSummary,
+  normalizeTemplate,
+  normalizeVariant,
+} from "@/services/productsShared";
 
 export async function fetchProductSummaries(options: {
   sort: ProductSort;
@@ -179,8 +67,8 @@ export async function fetchBoardCollections(): Promise<string[]> {
     .select("id")
     .eq("category", "boards");
   if (sectionsError) throw sectionsError;
-  const sectionIds = ((sectionsData ?? []) as Array<Record<string, unknown>>) 
-    .map((row) => toString(row.id))
+  const sectionIds = ((sectionsData ?? []) as Array<Record<string, unknown>>)
+    .map((row) => ensureString(row.id))
     .filter((value): value is string => Boolean(value));
   if (sectionIds.length === 0) return [];
 
@@ -216,7 +104,7 @@ export async function fetchProductDetail(slug: string): Promise<ProductDetail | 
   const productCore = normalizeProductCore(productRow as Record<string, unknown>);
   if (!productCore) return null;
 
-  const templateId = toString((productRow as Record<string, unknown>).product_template_id);
+  const templateId = ensureString((productRow as Record<string, unknown>).product_template_id);
   const [templateResult, imagesResult, variantsResult] = await Promise.all([
     templateId
       ? supabase

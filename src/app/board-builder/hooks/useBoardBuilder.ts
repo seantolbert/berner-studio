@@ -24,15 +24,15 @@ export function useBoardBuilder() {
   const [history, setHistory] = useState<BoardLayout[]>([]);
   const [future, setFuture] = useState<BoardLayout[]>([]);
 
-  type BoardUpdater = BoardLayout | ((prev: BoardLayout) => BoardLayout);
+  type BoardUpdater = BoardLayout | ((_state: BoardLayout) => BoardLayout);
 
   const setBoardDataWithHistory = (updater: BoardUpdater) => {
     setBoardData((prev) => {
       const prevClone = clone(prev);
-      const next = typeof updater === "function" ? (updater as (prev: BoardLayout) => BoardLayout)(prev) : updater;
-      setHistory((h) => [...h, prevClone]);
+      const nextState = typeof updater === "function" ? updater(prev) : updater;
+      setHistory((historySnapshot) => [...historySnapshot, prevClone]);
       setFuture([]);
-      return next;
+      return nextState;
     });
   };
 

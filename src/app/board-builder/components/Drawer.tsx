@@ -10,7 +10,7 @@ type Props = {
   canRedo?: boolean;
   onRandomize?: () => void;
   size: "small" | "regular" | "large";
-  onSelectSize: (s: "small" | "regular" | "large") => void;
+  onSelectSize: (_size: "small" | "regular" | "large") => void;
   onSave?: () => void;
   canSave?: boolean;
   saving?: boolean;

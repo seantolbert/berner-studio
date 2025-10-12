@@ -9,7 +9,7 @@ import type { BoardLayout } from "@/types/board";
 
 type Props = {
   boardData: BoardLayout;
-  setBoardData: (updater: BoardLayout | ((prev: BoardLayout) => BoardLayout)) => void;
+  setBoardData: (_updater: BoardLayout | ((_state: BoardLayout) => BoardLayout)) => void;
   strip3Enabled: boolean;
   onToggleStrip3: () => void;
   onConfirmComplete?: () => void;

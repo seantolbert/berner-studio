@@ -12,9 +12,9 @@ export type ModalOptions = {
 
 type ModalContextValue = {
   isOpen: boolean;
-  open: (content: React.ReactNode, options?: ModalOptions) => void;
+  open: (_content: React.ReactNode, _options?: ModalOptions) => void;
   close: () => void;
-  setContent: (content: React.ReactNode) => void;
+  setContent: (_content: React.ReactNode) => void;
   options: Required<Pick<ModalOptions, "dismissible" | "size">> & Pick<ModalOptions, "title">;
   content: React.ReactNode | null;
 };

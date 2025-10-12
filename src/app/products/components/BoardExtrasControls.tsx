@@ -1,6 +1,6 @@
 "use client";
 
-import { styleForToken } from "@/app/board-builder/components/woods";
+import { styleForToken } from "@/features/board-builder/lib/woods";
 import ExtrasFormControls from "@/app/board-builder/components/ExtrasFormControls";
 import type { Dispatch, SetStateAction } from "react";
 import type { BoardSize } from "@/types/board";

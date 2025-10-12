@@ -18,7 +18,7 @@ export default function FAQPage() {
           .select("id,question,answer,position")
           .eq("published", true)
           .order("position", { ascending: true });
-        if (!aborted) setItems((data || []) as any);
+        if (!aborted) setItems((data as FAQ[]) ?? []);
       } finally {
         if (!aborted) setLoading(false);
       }

@@ -10,10 +10,12 @@ const stripe = (() => {
   return new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
 })();
 
-type Body = {
-  amount_to_capture?: number; // cents
-  idempotencyKey?: string;
-};
+const BodySchema = z.object({
+  amount_to_capture: z.number().int().positive().optional(),
+  idempotencyKey: z.string().optional(),
+});
+
+type Body = z.infer<typeof BodySchema>;
 
 export async function POST(
   req: Request,
@@ -26,13 +28,15 @@ export async function POST(
     const { payment_intent_id: id } = await ctx.params;
     if (!id) return NextResponse.json({ error: "Missing payment_intent_id" }, { status: 400 });
 
-    const BodySchema = z.object({ amount_to_capture: z.number().int().positive().optional(), idempotencyKey: z.string().optional() });
-    const jsonUnknown = await req.json().catch(() => undefined);
-    const parsed = jsonUnknown ? BodySchema.safeParse(jsonUnknown) : { success: true, data: {} } as const;
-    if (!('success' in parsed) || !parsed.success) {
-      return NextResponse.json({ error: "Invalid body", issues: (parsed as any).error.flatten?.() }, { status: 400 });
+    const jsonUnknown = await req.json().catch(() => ({}));
+    const parsed = BodySchema.safeParse(jsonUnknown ?? {});
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid body", issues: parsed.error.flatten() },
+        { status: 400 }
+      );
     }
-    const body = (parsed as any).data as Partial<Body>;
+    const body: Body = parsed.data;
     const amount_to_capture = body.amount_to_capture;
     const idempotencyKey = body.idempotencyKey ?? req.headers.get("x-idempotency-key") ?? undefined;
 
@@ -46,10 +50,15 @@ export async function POST(
     );
 
     return NextResponse.json({ id: captured.id, status: captured.status, amount_received: captured.amount_received });
-  } catch (err: unknown) {
-    const anyErr = err as { statusCode?: number; message?: string } | undefined;
-    const status = anyErr?.statusCode || 500;
-    const message = anyErr?.message || "Unknown error";
+  } catch (error: unknown) {
+    const status =
+      typeof (error as { statusCode?: number } | undefined)?.statusCode === "number"
+        ? (error as { statusCode?: number }).statusCode ?? 500
+        : 500;
+    const message =
+      typeof (error as { message?: string } | undefined)?.message === "string"
+        ? (error as { message?: string }).message ?? "Unknown error"
+        : "Unknown error";
     return NextResponse.json({ error: message }, { status });
   }
 }

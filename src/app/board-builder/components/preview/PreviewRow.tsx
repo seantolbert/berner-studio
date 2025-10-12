@@ -11,10 +11,10 @@ type Props = {
   deselecting?: boolean;
   reflected?: boolean;
   compact?: boolean;
-  onClick?: (index: number) => void;
+  onClick?: (_index: number) => void;
   onTransitionEnd?: (
-    index: number,
-    e: React.TransitionEvent<HTMLButtonElement>
+    _index: number,
+    _event: React.TransitionEvent<HTMLButtonElement>
   ) => void;
 };
 

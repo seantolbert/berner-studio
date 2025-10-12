@@ -7,7 +7,7 @@ type ProductGalleryProps = {
   fallbackImage?: string | null;
   productName: string;
   gallery: ProductImage[];
-  onSelectImage: (image: ProductImage) => void;
+  onSelectImage: (_image: ProductImage) => void;
 };
 
 export function ProductGallery({ primary, fallbackImage, productName, gallery, onSelectImage }: ProductGalleryProps) {

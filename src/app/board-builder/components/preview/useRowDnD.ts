@@ -6,5 +6,5 @@ export type RowOrder = BoardRowOrder;
 export type RowDnDParams = {
   order: RowOrder[];
   size: Size;
-  onReorder?: (nextOrder: RowOrder[]) => void;
+  onReorder?: (_nextOrder: RowOrder[]) => void;
 };

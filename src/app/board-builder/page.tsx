@@ -30,7 +30,6 @@ export default function BoardBuilderPage() {
     size,
     handleSelectSize,
     handleRandomize,
-    handleReorder: _handleReorder,
     handleReverseRow,
     handleChangeRowStrip,
     canUndo,
@@ -81,9 +80,9 @@ export default function BoardBuilderPage() {
           },
         });
         setPricingVersion((v) => v + 1);
-      } catch (e) {
+      } catch (error) {
         // non-fatal: fallback to defaults
-        console.warn("Failed to load builder pricing; using defaults");
+        console.warn("Failed to load builder pricing; using defaults", error);
       }
     })();
     return () => { aborted = true; };
@@ -95,6 +94,8 @@ export default function BoardBuilderPage() {
   }, [boardData.strips, strip3Enabled]);
 
   const pricing = useMemo(() => {
+    void woodsVersion;
+    void pricingVersion;
     return calculateBoardPrice({
       size,
       strips: boardData.strips,
@@ -128,7 +129,7 @@ export default function BoardBuilderPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [setIsOpen]);
 
   // Measure header height to keep page non-scrollable
   useEffect(() => {
@@ -138,8 +139,8 @@ export default function BoardBuilderPage() {
       setHeaderH(h);
     };
     measure();
-    window.addEventListener("resize", measure, { passive: true } as any);
-    return () => window.removeEventListener("resize", measure as any);
+    window.addEventListener("resize", measure, { passive: true });
+    return () => window.removeEventListener("resize", measure);
   }, []);
 
   // Load template from localStorage or redirect back to selection
@@ -164,7 +165,7 @@ export default function BoardBuilderPage() {
       }
       loadTemplate(tpl);
       loadedRef.current = true;
-    } catch (e) {
+    } catch {
       router.replace("/");
     }
   }, [router, loadTemplate, resetToBlank]);
@@ -282,7 +283,7 @@ export default function BoardBuilderPage() {
   );
 }
 
-function SaveTemplateModal({ initialName = "", onCancel, onSave }: { initialName?: string; onCancel: () => void; onSave: (dest: 'default' | 'product', name: string) => void }) {
+function SaveTemplateModal({ initialName = "", onCancel, onSave }: { initialName?: string; onCancel: () => void; onSave: (_destination: 'default' | 'product', _templateName: string) => void }) {
   const [name, setName] = useState(initialName);
   const [dest, setDest] = useState<'default' | 'product'>('default');
   const canSave = name.trim().length > 0;
@@ -328,30 +329,35 @@ function SaveTemplateController({
   strip3Enabled: boolean;
   strips: (string | null)[][];
   order: { stripNo: number; reflected: boolean }[];
-  onSaving: (v: boolean) => void;
-  children: (openSave: () => void) => React.ReactNode;
+  onSaving: (_state: boolean) => void;
+  children: (_openSave: () => void) => React.ReactNode;
 }) {
+  const modal = useModal();
   if (!enabled) return children(() => {});
-  const { open, close, setContent } = useModal();
-  const openSave = () => {
+  const { open, close, setContent } = modal;
+  const handleOpenSave = () => {
     open(
       <SaveTemplateModal
         initialName="Classic Template"
         onCancel={close}
-        onSave={async (dest, name) => {
+        onSave={async (destination, templateName) => {
           onSaving(true);
           try {
             const { saveDefaultTemplate, saveProductTemplate } = await import("@/lib/supabase/usage");
-            if (dest === "default") {
-              await saveDefaultTemplate({ name, size, strip3Enabled, strips: strips as any, order });
+            if (destination === "default") {
+              await saveDefaultTemplate({ name: templateName, size, strip3Enabled, strips, order });
             } else {
-              await saveProductTemplate({ name, size, strip3Enabled, strips: strips as any, order });
+              await saveProductTemplate({ name: templateName, size, strip3Enabled, strips, order });
             }
-            setContent(<div className="text-sm">Saved to {dest === "default" ? "Default Templates" : "Product Templates"}.</div>);
+            setContent(<div className="text-sm">Saved to {destination === "default" ? "Default Templates" : "Product Templates"}.</div>);
             setTimeout(() => close(), 900);
-          } catch (e: any) {
-            console.error(e);
-            setContent(<div className="text-sm text-red-600 dark:text-red-400">{e?.message || "Failed to save template"}</div>);
+          } catch (error: unknown) {
+            console.error(error);
+            const message =
+              error instanceof Error ? error.message : "Failed to save template";
+            setContent(
+              <div className="text-sm text-red-600 dark:text-red-400">{message}</div>
+            );
           } finally {
             onSaving(false);
           }
@@ -360,5 +366,5 @@ function SaveTemplateController({
       { title: "Save template", size: "md" }
     );
   };
-  return <>{children(openSave)}</>;
+  return <>{children(handleOpenSave)}</>;
 }

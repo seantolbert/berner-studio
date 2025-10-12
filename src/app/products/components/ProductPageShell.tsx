@@ -1,16 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { setDynamicWoods } from "@/app/board-builder/components/woods";
-import CostSummary from "@/app/board-builder/components/CostSummary";
-import { estimateProductETA, estimateBoardETA } from "@/lib/leadtime";
+import CostSummary from "@/features/board-builder/ui/CostSummary";
+import { estimateProductETA } from "@/lib/leadtime";
 import { formatCurrencyCents } from "@/lib/money";
-import { DEFAULT_CURRENCY } from "@/lib/env";
-import { PRICING_SSO, calculateBoardPrice } from "@features/board-builder/lib/pricing";
-import { listEnabledBuilderWoods } from "@/lib/supabase/usage";
 import { createBoardPreviewDataUrl } from "@/lib/boardPreviewImage";
-import { DEFAULT_EDGE_OPTION } from "@/app/board-builder/components/ExtrasFormControls";
 import type {
   ProductCore,
   ProductImage,
@@ -18,12 +13,13 @@ import type {
   ProductTemplateDetail,
 } from "@/types/product";
 import type { CartItem } from "@/types/cart";
-import type { BoardLayout, BoardSize } from "@/types/board";
 import { ProductGallery } from "@/app/products/components/ProductGallery";
 import { BoardPreviewPanel } from "@/app/products/components/BoardPreviewPanel";
 import { BoardExtrasControls } from "@/app/products/components/BoardExtrasControls";
 import { ProductVariantSelector } from "@/app/products/components/ProductVariantSelector";
 import { ProductPurchasePanel } from "@/app/products/components/ProductPurchasePanel";
+import { useBoardCustomization } from "@/features/products/hooks/useBoardCustomization";
+import { appendCartItem, emitCartUpdate } from "@/utils/cartStorage";
 
 type ProductCartLine = CartItem & {
   product: { slug: string };
@@ -41,83 +37,49 @@ type Props = {
 export function ProductPageShell({ loading, product, variants, images, template }: Props) {
   const router = useRouter();
 
-  const [assignedTemplate, setAssignedTemplate] = useState<ProductTemplateDetail | null>(template);
-  const [localImages, setLocalImages] = useState<ProductImage[]>(images);
-  const [edgeProfile, setEdgeProfile] = useState<"square" | "chamfer" | "roundover">("square");
-  const [borderRadius, setBorderRadius] = useState<number>(0);
-  const [chamferSize, setChamferSize] = useState<number>(8);
-  const [edgeOption, setEdgeOption] = useState<string>(DEFAULT_EDGE_OPTION);
-  const [grooveEnabled, setGrooveEnabled] = useState<boolean>(false);
-  const [stripSampleOption, setStripSampleOption] = useState<"none" | "glide" | "lift">("none");
-  const [brassFeet, setBrassFeet] = useState<boolean>(false);
-  const [boardSize, setBoardSize] = useState<"small" | "regular">("regular");
+  const {
+    assignedTemplate,
+    boardSize,
+    setBoardSize,
+    edgeProfile,
+    setEdgeProfile,
+    borderRadius,
+    setBorderRadius,
+    chamferSize,
+    setChamferSize,
+    edgeOption,
+    setEdgeOption,
+    grooveEnabled,
+    setGrooveEnabled,
+    stripSampleOption,
+    setStripSampleOption,
+    brassFeet,
+    setBrassFeet,
+    boardLayout,
+    canCustomizeBoard,
+    extrasCents,
+    extrasDetailEntries,
+    boardPricing,
+    boardEtaLabel,
+    handleEnabled,
+    topRowColors,
+    cornerColors2x2,
+    resetBoardOptions,
+  } = useBoardCustomization({ product, template });
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
-  const [customPrice, setCustomPrice] = useState<number | null>(null);
-  const [pricingVersion, setPricingVersion] = useState(0);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   useEffect(() => {
-    setAssignedTemplate(template ?? null);
-  }, [product?.id, template]);
-
-  useEffect(() => {
-    setLocalImages(images);
     setSelectedImageId(images[0]?.id ?? null);
   }, [images]);
 
   useEffect(() => {
-    if (assignedTemplate) {
-      setBoardSize(assignedTemplate.size === "small" ? "small" : "regular");
-    } else {
-      setBoardSize("regular");
-    }
-  }, [assignedTemplate, product]);
-
-  useEffect(() => {
-    let active = true;
-    if (!assignedTemplate) return;
-    listEnabledBuilderWoods()
-      .then((woods) => {
-        if (!active) return;
-        setDynamicWoods(woods.map((wood) => ({ key: wood.key, color: wood.color })));
-        setPricingVersion((v) => v + 1);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [assignedTemplate, product]);
-
-  useEffect(() => {
     if (!product) return;
-    setCustomPrice(null);
-    setGrooveEnabled(false);
-    setEdgeProfile("square");
-    setBorderRadius(0);
-    setChamferSize(8);
-    setEdgeOption(DEFAULT_EDGE_OPTION);
-    setStripSampleOption("none");
-    setBrassFeet(false);
     setAdded(false);
-  }, [product]);
-
-  const handleEnabled = useCallback(
-    (opt: "none" | "glide" | "lift") => {
-      const eo = (edgeOption || "").toLowerCase();
-      if (eo === "double_chamfer") return opt === "none";
-      if (eo === "diamond" || eo === "flat_top") return opt !== "glide";
-      return true;
-    },
-    [edgeOption]
-  );
-
-  useEffect(() => {
-    if (!handleEnabled(stripSampleOption)) {
-      setStripSampleOption("none");
-    }
-  }, [edgeOption, handleEnabled, stripSampleOption]);
+    resetBoardOptions();
+  }, [product, resetBoardOptions]);
 
   useEffect(() => {
     if (!product) {
@@ -137,10 +99,10 @@ export function ProductPageShell({ loading, product, variants, images, template 
 
   const gallery = useMemo(() => {
     const byColor = selectedColor
-      ? localImages.filter((im) => (im.color || "").toLowerCase() === selectedColor.toLowerCase())
+      ? images.filter((im) => (im.color || "").toLowerCase() === selectedColor.toLowerCase())
       : [];
-    return byColor.length ? byColor : localImages;
-  }, [localImages, selectedColor]);
+    return byColor.length ? byColor : images;
+  }, [images, selectedColor]);
 
   useEffect(() => {
     if (!selectedImageId) return;
@@ -164,123 +126,30 @@ export function ProductPageShell({ loading, product, variants, images, template 
   }, [variants, selectedColor, selectedSize]);
 
   const basePrice = selectedVariant?.price_cents_override ?? product?.price_cents ?? 0;
-  const extrasCents = useMemo(() => {
-    if (!product) return 0;
-    if (product.category !== "boards") return 0;
-    let extras = 0;
-    if (grooveEnabled) extras += Math.round((PRICING_SSO.extras.juiceGroove || 0) * 100);
-    if (brassFeet) extras += Math.round((PRICING_SSO.extras.brassFeet || 0) * 100);
-    return extras;
-  }, [product, grooveEnabled, brassFeet]);
-
-  const extrasDetailEntries = useMemo(() => {
-    const details: Array<{ label: string; amountCents: number }> = [];
-    if (grooveEnabled) details.push({ label: "Juice groove", amountCents: Math.round((PRICING_SSO.extras.juiceGroove || 0) * 100) });
-    if (brassFeet) details.push({ label: "Brass feet", amountCents: Math.round((PRICING_SSO.extras.brassFeet || 0) * 100) });
-    return details;
-  }, [grooveEnabled, brassFeet]);
-
-  const boardPricing = useMemo(() => {
-    void pricingVersion;
-    if (!product || product.category !== "boards" || !assignedTemplate) return null;
-    const sizeKey: BoardSize = boardSize === "regular" ? "regular" : "small";
-    const { base, variable, cellCount, extrasThirdStrip = 0 } = calculateBoardPrice({
-      size: sizeKey,
-      strips: assignedTemplate.layout.strips,
-      strip3Enabled: assignedTemplate.strip3Enabled,
-    });
-    const baseCents = Math.round(base * 100);
-    const variableCents = Math.round(variable * 100);
-    const extrasThirdStripCents = Math.round(extrasThirdStrip * 100);
-    const totalCents = baseCents + variableCents + extrasThirdStripCents + extrasCents;
-    return {
-      base,
-      variable,
-      cellCount,
-      extrasThirdStrip,
-      baseCents,
-      variableCents,
-      extrasThirdStripCents,
-      extrasCents,
-      totalCents,
-    };
-  }, [product, assignedTemplate, boardSize, extrasCents, pricingVersion]);
 
   const displayPrice = useMemo(() => {
-    if (typeof customPrice === "number") return customPrice;
     if (product?.category === "boards") {
       if (boardPricing) return boardPricing.totalCents;
       return basePrice + extrasCents;
     }
     return basePrice;
-  }, [customPrice, product?.category, boardPricing, basePrice, extrasCents]);
+  }, [product?.category, boardPricing, basePrice, extrasCents]);
 
   const etaLabel = useMemo(() => {
     if (!product) return "";
     if (product.category === "boards") {
-      return estimateBoardETA({
-        size: boardSize,
-        strip3Enabled: assignedTemplate?.strip3Enabled ?? false,
-        extras: { edgeProfile, chamferSize, grooveEnabled },
-        ...(assignedTemplate ? { boardData: { strips: assignedTemplate.layout.strips } } : {}),
-      }).label;
+      return boardEtaLabel;
     }
     return estimateProductETA().label;
-  }, [product, edgeProfile, chamferSize, grooveEnabled, boardSize, assignedTemplate]);
+  }, [boardEtaLabel, product]);
 
-  const topRowColors: (string | null)[] = useMemo(() => {
-    if (!assignedTemplate) return [];
-    const cols = assignedTemplate.layout.strips[0]?.length ?? 12;
-    const rows = boardSize === "small" ? 11 : 15;
-    const effectiveOrder = (
-      assignedTemplate.layout.order && assignedTemplate.layout.order.length
-        ? assignedTemplate.layout.order
-        : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }))
-    ) as { stripNo: number; reflected: boolean }[];
-    const rowObj = effectiveOrder[0] || { stripNo: 1, reflected: false };
-    const stripIndex = Math.max(0, Math.min(2, (rowObj.stripNo ?? 1) - 1));
-    const rowColors =
-      assignedTemplate.layout.strips[stripIndex] ??
-      Array<string | null>(cols).fill(null);
-    return rowObj.reflected ? rowColors.slice().reverse() : rowColors;
-  }, [assignedTemplate, boardSize]);
-
-  const cornerColors2x2: (string | null)[][] = useMemo(() => {
-    if (!assignedTemplate) return [[], []];
-    const cols = assignedTemplate.layout.strips[0]?.length ?? 12;
-    const rows = boardSize === "small" ? 11 : 15;
-    const effectiveOrder = (
-      assignedTemplate.layout.order && assignedTemplate.layout.order.length
-        ? assignedTemplate.layout.order
-        : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }))
-    ) as { stripNo: number; reflected: boolean }[];
-    const out: (string | null)[][] = [];
-    for (let r = 0; r < 2; r++) {
-      const rowObj = effectiveOrder[r] || { stripNo: 1, reflected: false };
-      const stripIndex = Math.max(0, Math.min(2, (rowObj.stripNo ?? 1) - 1));
-      let rowColors =
-        assignedTemplate.layout.strips[stripIndex] ??
-        Array<string | null>(cols).fill(null);
-      if (rowObj.reflected) rowColors = rowColors.slice().reverse();
-      out.push([rowColors[0] ?? null, rowColors[1] ?? null]);
-    }
-    return out;
-  }, [assignedTemplate, boardSize]);
-
-  const isBoardProduct = product?.category === "boards";
-  const canCustomizeBoard = Boolean(isBoardProduct && template && assignedTemplate);
   const disableAdd = product?.category === "apparel" && (!selectedColor || !selectedSize);
-  const boardLayout: BoardLayout = assignedTemplate?.layout ?? { strips: [], order: [] };
 
   const addToCart = () => {
     if (!product) return;
     if (product.category === "apparel" && (!selectedVariant || !selectedColor || !selectedSize)) return;
 
     try {
-      const raw = localStorage.getItem("bs_cart");
-      const parsed = raw ? JSON.parse(raw) : [];
-      const existing: ProductCartLine[] = Array.isArray(parsed) ? (parsed as ProductCartLine[]) : [];
-
       const id = `prod-${product.slug}-${Date.now()}`;
       const lineName = (() => {
         if (product.category === "apparel" && selectedVariant) {
@@ -369,11 +238,8 @@ export function ProductPageShell({ loading, product, variants, images, template 
         ...(cartLineImage ? { image: cartLineImage } : {}),
       };
 
-      const next = [...existing, line];
-      localStorage.setItem("bs_cart", JSON.stringify(next));
-      try {
-        window.dispatchEvent(new CustomEvent("cart:update"));
-      } catch {}
+      appendCartItem<ProductCartLine>(line);
+      emitCartUpdate();
       setAdded(true);
     } catch (error) {
       console.error("Failed to add to cart", error);
@@ -398,15 +264,6 @@ export function ProductPageShell({ loading, product, variants, images, template 
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden">
-      <ProductJsonLd
-        product={{
-          slug: product.slug,
-          name: product.name,
-          description: product.short_desc || product.long_desc || "",
-          priceCents: displayPrice,
-          ...(product.primary_image_url ? { image: product.primary_image_url } : {}),
-        }}
-      />
       <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-2 items-start">
       <ProductGallery
           primary={displayImage}
@@ -439,15 +296,15 @@ export function ProductPageShell({ loading, product, variants, images, template 
               <BoardPreviewPanel
                 layout={boardLayout}
                 boardSize={boardSize}
-               edgeProfile={edgeProfile}
-               borderRadius={borderRadius}
-               chamferSize={chamferSize}
-               grooveEnabled={grooveEnabled}
-               stripSampleOption={stripSampleOption}
-               brassFeet={brassFeet}
-               edgeOption={edgeOption}
-             />
-             <BoardExtrasControls
+                edgeProfile={edgeProfile}
+                borderRadius={borderRadius}
+                chamferSize={chamferSize}
+                grooveEnabled={grooveEnabled}
+                stripSampleOption={stripSampleOption}
+                brassFeet={brassFeet}
+                edgeOption={edgeOption}
+              />
+              <BoardExtrasControls
                 boardSize={boardSize}
                 onBoardSizeChange={(next) => setBoardSize(next === "large" ? "regular" : next)}
                 grooveEnabled={grooveEnabled}
@@ -512,51 +369,5 @@ export function ProductPageShell({ loading, product, variants, images, template 
         </div>
       </div>
     </main>
-  );
-}
-
-function ProductJsonLd({
-  product,
-}: {
-  product: {
-    slug: string;
-    name: string;
-    description: string;
-    priceCents: number;
-    image?: string;
-  };
-}) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const base = (siteUrl || "").replace(/\/$/, "");
-  const url = base ? `${base}/products/${product.slug}` : `/products/${product.slug}`;
-  const image = product.image
-    ? product.image.startsWith("http")
-      ? product.image
-      : `${base}${product.image}`
-    : base
-    ? `${base}/og.svg`
-    : "/og.svg";
-  const json = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description,
-    image: [image],
-    brand: { "@type": "Brand", name: "Berner Studio" },
-    url,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: DEFAULT_CURRENCY.toUpperCase(),
-      price: (product.priceCents / 100).toFixed(2),
-      availability: "http://schema.org/InStock",
-      url,
-    },
-  };
-  return (
-    <script
-      type="application/ld+json"
-      suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }}
-    />
   );
 }

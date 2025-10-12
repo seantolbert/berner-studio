@@ -9,23 +9,17 @@ function sanitizeFilename(name: string) {
 }
 
 async function ensureMediaBucket() {
+  if (!adminSupabase) return;
   try {
-    const { data: bucket } = await adminSupabase!.storage.getBucket("media");
-    if (!bucket) {
-      await adminSupabase!.storage.createBucket("media", { public: true });
-    }
+    const { data: bucket } = await adminSupabase.storage.getBucket("media");
+    if (bucket) return;
   } catch {
-    // Fallback: try list + create if needed
-    try {
-      const resp = (adminSupabase as unknown as { storage: { listBuckets?: () => Promise<{ data?: Array<{ name: string }>; error?: unknown }> } }).storage;
-      const out = await resp.listBuckets?.();
-      const exists = Array.isArray(out?.data) && out!.data!.some((b) => b.name === "media");
-      if (!exists) {
-        await (adminSupabase as unknown as { storage: { createBucket: (n: string, o: { public: boolean }) => Promise<unknown> } }).storage.createBucket("media", { public: true });
-      }
-    } catch {
-      // ignore; upload will surface error if bucket is missing
-    }
+    // ignore and attempt to create
+  }
+  try {
+    await adminSupabase.storage.createBucket("media", { public: true });
+  } catch {
+    // ignore; subsequent upload errors will surface if creation failed
   }
 }
 
@@ -45,7 +39,7 @@ export async function POST(req: NextRequest) {
   const safe = sanitizeFilename(file.name || "upload");
   const path = `products/${slug}/${now}-${safe}`;
   const arrayBuffer = await file.arrayBuffer();
-  const { data: _data, error } = await adminSupabase.storage.from("media").upload(path, Buffer.from(arrayBuffer), {
+  const { error } = await adminSupabase.storage.from("media").upload(path, Buffer.from(arrayBuffer), {
     contentType: file.type || "application/octet-stream",
     upsert: false,
   });

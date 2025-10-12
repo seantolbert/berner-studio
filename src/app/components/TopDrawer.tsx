@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 type Props = {
   open: boolean;
-  onOpenChange: (v: boolean) => void;
+  onOpenChange: (_open: boolean) => void;
   children?: React.ReactNode;
   title?: string;
   returnFocusRef?: React.RefObject<HTMLElement | null>;
@@ -42,7 +42,7 @@ export default function TopDrawer({ open, onOpenChange, children, title, returnF
       // Return focus to trigger button on close
       setTimeout(() => returnFocusRef.current?.focus(), 0);
     }
-  }, [open]);
+  }, [open, returnFocusRef]);
 
   // Focus trap within panel
   useEffect(() => {

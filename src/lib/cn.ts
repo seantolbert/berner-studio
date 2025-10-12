@@ -1,10 +1,14 @@
-export type ClassValue = string | number | null | false | undefined | ClassDictionary | ClassArray;
+type ClassDictionary = Record<string, boolean | null | undefined>;
+type ClassArray = ClassValue[];
 
-interface ClassDictionary {
-  [id: string]: any;
-}
-
-interface ClassArray extends Array<ClassValue> {}
+export type ClassValue =
+  | string
+  | number
+  | null
+  | false
+  | undefined
+  | ClassDictionary
+  | ClassArray;
 
 export function cn(...args: ClassValue[]): string {
   const classes: string[] = [];
@@ -19,7 +23,6 @@ export function cn(...args: ClassValue[]): string {
       }
     } else if (typeof arg === "object") {
       for (const key in arg) {
-        // eslint-disable-next-line no-prototype-builtins
         if (Object.prototype.hasOwnProperty.call(arg, key) && (arg as ClassDictionary)[key]) {
           classes.push(key);
         }
@@ -28,4 +31,3 @@ export function cn(...args: ClassValue[]): string {
   }
   return classes.join(" ");
 }
-

@@ -32,9 +32,13 @@ export async function POST(req: Request) {
     if (STRIPE_WEBHOOK_SECRET && sig) {
       try {
         event = stripe.webhooks.constructEvent(buf, sig, STRIPE_WEBHOOK_SECRET);
-      } catch (err: unknown) {
-        const anyErr = err as { message?: string } | undefined;
-        return NextResponse.json({ error: `Webhook signature verification failed: ${anyErr?.message || String(err)}` }, { status: 400 });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown error";
+        return NextResponse.json(
+          { error: `Webhook signature verification failed: ${message}` },
+          { status: 400 }
+        );
       }
     } else {
       if (isProd) {
@@ -53,11 +57,15 @@ export async function POST(req: Request) {
         const pi = event.data.object as Stripe.PaymentIntent;
         console.log("[webhook] payment_intent.succeeded", { id: pi.id, amount: pi.amount, currency: pi.currency });
         await markOrderPaidByPI(pi.id).catch(() => {});
+        const paymentMethodId =
+          typeof pi.payment_method === "string"
+            ? pi.payment_method
+            : typeof pi.payment_method === "object" && pi.payment_method !== null
+              ? (pi.payment_method as Stripe.PaymentMethod).id
+              : null;
         await recordPaymentEvent({
           pi_id: pi.id,
-          pm_id: (typeof pi.payment_method === 'object' && pi.payment_method && 'id' in (pi.payment_method as any))
-            ? (pi.payment_method as Stripe.PaymentMethod).id
-            : (typeof pi.payment_method === 'string' ? pi.payment_method : null),
+          pm_id: paymentMethodId,
           amount_cents: pi.amount_received || pi.amount,
           currency: pi.currency,
           status: pi.status,
@@ -95,9 +103,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (err: unknown) {
-    const anyErr = err as { message?: string } | undefined;
-    const message = anyErr?.message || "Unhandled error";
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : typeof error === "string" ? error : "Unhandled error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -20,9 +20,13 @@ export default function GalleryPage() {
           .eq('published', true)
           .order('position', { ascending: true });
         if (error) throw error;
-        if (!aborted) setItems((data || []) as any);
-      } catch (e: any) {
-        if (!aborted) setError(e?.message || 'Failed to load gallery');
+        if (!aborted) setItems((data as G[]) || []);
+      } catch (error: unknown) {
+        if (!aborted) {
+          const message =
+            error instanceof Error ? error.message : "Failed to load gallery";
+          setError(message);
+        }
       } finally { if (!aborted) setLoading(false); }
     })();
     return () => { aborted = true; };

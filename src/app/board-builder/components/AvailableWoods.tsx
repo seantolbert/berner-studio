@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/money";
 
 type Props = {
   selectedKey: string | null;
-  onSelect: (key: string) => void;
+  onSelect: (_key: string) => void;
 };
 
 type DbWood = {

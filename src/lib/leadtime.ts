@@ -1,7 +1,7 @@
 // Lightweight lead time estimation utilities.
 // Intent: provide helpful ETA messaging without backend complexity.
 
-import { countFilledCells } from "@/app/board-builder/pricing";
+import { countFilledCells } from "@/features/board-builder/lib/pricing";
 import type { BoardExtras, BoardLayout, BoardSize } from "@/types/board";
 import type { CartItem } from "@/types/cart";
 
@@ -91,9 +91,10 @@ export function estimateBoardETA(cfg: BoardConfig, today = new Date()): EtaRange
 }
 
 export function estimateProductETA(today = new Date()): EtaRange {
-  // Stock products: quick handling
-  const prodMin = 0, prodMax = 1;
-  const shipMin = SHIPPING_STANDARD.min, shipMax = SHIPPING_STANDARD.max;
+  const prodMin = 0;
+  const prodMax = 1;
+  const shipMin = SHIPPING_STANDARD.min;
+  const shipMax = SHIPPING_STANDARD.max;
   const startDate = addBusinessDays(today, prodMin + shipMin);
   const endDate = addBusinessDays(today, prodMax + shipMax);
   return { productionDays: { min: prodMin, max: prodMax }, shippingDays: { min: shipMin, max: shipMax }, startDate, endDate, label: formatEtaLabel(startDate, endDate) };
@@ -103,8 +104,10 @@ type CartItemETA = Pick<CartItem, "config">;
 
 export function estimateCartETA(items: CartItemETA[], today = new Date()): EtaRange | null {
   if (!Array.isArray(items) || items.length === 0) return null;
-  let prodMin = 0, prodMax = 0;
-  let shipMin = SHIPPING_STANDARD.min, shipMax = SHIPPING_STANDARD.max;
+  const prodMin = 0;
+  const prodMax = 0;
+  const shipMin = SHIPPING_STANDARD.min;
+  const shipMax = SHIPPING_STANDARD.max;
 
   let start: Date | null = null;
   let end: Date | null = null;

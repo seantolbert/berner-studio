@@ -49,9 +49,11 @@ export default function HomeHero({ data }: { data: HomeHeroData | null }) {
     const el = imgRef.current;
     if (!el) return;
     if (el.complete) {
-      // Some browsers need decode() to settle rendering
-      if (typeof (el as any).decode === "function") {
-        (el as any).decode().catch(() => {}).finally(() => setImgLoaded(true));
+      const maybeDecode = (el as HTMLImageElement & {
+        decode?: () => Promise<void>;
+      }).decode;
+      if (typeof maybeDecode === "function") {
+        maybeDecode.call(el).catch(() => {}).finally(() => setImgLoaded(true));
       } else {
         setImgLoaded(true);
       }
@@ -297,6 +299,7 @@ export default function HomeHero({ data }: { data: HomeHeroData | null }) {
           >
             {/* Animated skeleton while image loads */}
             {!imgLoaded && <div className="skeleton-layer" />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imgRef}
               src={src}

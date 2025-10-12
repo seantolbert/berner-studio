@@ -2,7 +2,7 @@ import type React from "react";
 
 type Props = {
   selected: "small" | "regular" | "large";
-  onSelect: (size: "small" | "regular" | "large") => void;
+  onSelect: (_size: "small" | "regular" | "large") => void;
 };
 
 export default function SizeSelector({ selected, onSelect }: Props) {

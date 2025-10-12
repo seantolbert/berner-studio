@@ -7,8 +7,8 @@ type ProductVariantSelectorProps = {
   variants: ProductVariant[];
   selectedColor: string | null;
   selectedSize: string | null;
-  onSelectColor: (color: string | null) => void;
-  onSelectSize: (size: string | null) => void;
+  onSelectColor: (_color: string | null) => void;
+  onSelectSize: (_size: string | null) => void;
 };
 
 export function ProductVariantSelector({

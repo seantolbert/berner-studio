@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
 
   // fetch selections
   const ids = (sections || []).map((s) => s.id);
-  let productsBySection: Record<string, { product_id: string; position: number }[]> = {};
-  let collectionsBySection: Record<string, { id: string; label: string; href: string | null; position: number }[]> = {};
+  const productsBySection: Record<string, { product_id: string; position: number }[]> = {};
+  const collectionsBySection: Record<string, { id: string; label: string; href: string | null; position: number }[]> = {};
   if (ids.length) {
     const { data: selections, error: selErr } = await adminSupabase
       .from("home_section_products")

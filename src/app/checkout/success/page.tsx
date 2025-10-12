@@ -92,13 +92,13 @@ function CheckoutSuccessContent() {
         )}
         {order?.id && (
           <div className="text-xs opacity-70 mb-4">
-            Order ID: <code className="px-1 py-0.5 rounded bg-black/5 dark:bg:white/10 dark:bg-white/10">{order.id}</code>
+            Order ID: <code className="px-1 py-0.5 rounded bg-black/5 dark:bg-white/10">{order.id}</code>
             {" "}(<span className="capitalize">{order.status}</span>)
           </div>
         )}
         {authorizedOnly && piInfo?.id && (
           <div className="text-xs opacity-70 mb-4">
-            To capture later (test): POST <code>/api/capture/{piInfo.id}</code> with optional JSON <code>{'{'}"amount_to_capture": cents{'}'}</code>.
+            To capture later (test): POST <code>/api/capture/{piInfo.id}</code> with optional JSON <code>{'{'}&quot;amount_to_capture&quot;: cents{'}'}</code>.
           </div>
         )}
         <div className="flex items-center justify-center gap-3">

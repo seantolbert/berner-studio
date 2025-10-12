@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { CSSProperties } from "react";
-import { styleForToken } from "@/app/board-builder/components/woods";
+import { styleForToken } from "@/features/board-builder/lib/woods";
 
 type Props = {
   strips: (string | null)[][];

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LS_SELECTED_TEMPLATE_KEY, type BoardTemplate } from "../templates";
-import { setDynamicWoods } from "@/app/board-builder/components/woods";
+import { setDynamicWoods } from "@/features/board-builder/lib/woods";
 import { useRouter } from "next/navigation";
 import TemplateButton from "../components/TemplateButton";
 import { listTemplates, listMyBoardTemplates, listEnabledBuilderWoods } from "@/lib/supabase/usage";

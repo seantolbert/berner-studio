@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import type { BoardTemplate } from "../templates";
-import { styleForToken } from "../board-builder/components/woods";
+import { styleForToken } from "@/features/board-builder/lib/woods";
 
 type Props = {
   template: BoardTemplate;

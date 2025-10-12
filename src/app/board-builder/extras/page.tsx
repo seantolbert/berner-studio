@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { calculateBoardPrice, PRICING_SSO } from "@features/board-builder/lib/pricing";
 import { estimateBoardETA } from "@/lib/leadtime";
 import CostSummary from "@features/board-builder/ui/CostSummary";
@@ -28,12 +28,15 @@ export default function ExtrasPage() {
   const [extrasImages, setExtrasImages] = useState<Array<{ id: string; url: string; alt: string | null; is_primary: boolean; position: number }>>([]);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
 
-  const handleEnabled = (opt: "none" | "glide" | "lift") => {
-    const eo = (edgeOption || "").toLowerCase();
-    if (eo === "double_chamfer") return opt === "none";
-    if (eo === "diamond" || eo === "flat_top") return opt !== "glide";
-    return true;
-  };
+  const handleEnabled = useCallback(
+    (opt: "none" | "glide" | "lift") => {
+      const eo = (edgeOption || "").toLowerCase();
+      if (eo === "double_chamfer") return opt === "none";
+      if (eo === "diamond" || eo === "flat_top") return opt !== "glide";
+      return true;
+    },
+    [edgeOption]
+  );
 
   useEffect(() => {
     let aborted = false;
@@ -144,7 +147,7 @@ export default function ExtrasPage() {
     if (!handleEnabled(stripSampleOption)) {
       setStripSampleOption("none");
     }
-  }, [edgeOption]);
+  }, [handleEnabled, stripSampleOption]);
 
   const galleryImages: ProductImage[] = useMemo(() => extrasImages.map((img) => ({ id: img.id, url: img.url, alt: img.alt ?? null, color: null })), [extrasImages]);
   const fallbackGallery: ProductImage[] = useMemo(

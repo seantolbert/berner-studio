@@ -40,8 +40,9 @@ export default function BuilderPricingPage() {
         if (!res.ok) throw new Error(data?.error || "Failed to load pricing");
         if (aborted) return;
         if (data?.item) setPricing((prev) => ({ ...prev, ...data.item }));
-      } catch (e: any) {
-        setError(e?.message || "Unexpected error");
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unexpected error";
+        setError(message);
       } finally {
         if (!aborted) setLoading(false);
       }
@@ -60,8 +61,9 @@ export default function BuilderPricingPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to save");
-    } catch (e: any) {
-      setError(e?.message || "Unexpected error");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unexpected error";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -161,8 +163,11 @@ function WoodsManager() {
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to load woods");
         if (!aborted) setItems(data.items || []);
-      } catch (e: any) {
-        if (!aborted) setErrorMsg(e?.message || "Unexpected error");
+      } catch (error: unknown) {
+        if (!aborted) {
+          const message = error instanceof Error ? error.message : "Unexpected error";
+          setErrorMsg(message);
+        }
       } finally {
         if (!aborted) setLoading(false);
       }
@@ -185,8 +190,9 @@ function WoodsManager() {
       const data2 = await res2.json();
       setItems(data2.items || []);
       setNewKey(""); setNewName(""); setNewPrice(""); setNewEnabled(true); setNewColor("#cccccc");
-    } catch (e: any) {
-      alert(e?.message || "Failed to add wood");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to add wood";
+      alert(message);
     } finally {
       setAdding(false);
     }
@@ -201,8 +207,9 @@ function WoodsManager() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to save");
-    } catch (e: any) {
-      alert(e?.message || "Failed to save");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to save";
+      alert(message);
     }
   };
 
@@ -213,8 +220,9 @@ function WoodsManager() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to delete");
       setItems((prev) => prev.filter((w) => w.key !== key));
-    } catch (e: any) {
-      alert(e?.message || "Failed to delete");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete";
+      alert(message);
     }
   };
 

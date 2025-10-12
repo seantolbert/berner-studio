@@ -1,4 +1,4 @@
-import { styleForToken } from "@/app/board-builder/components/woods";
+import { styleForToken } from "@/features/board-builder/lib/woods";
 import type { BoardExtras, BoardLayout, BoardSize } from "@/types/board";
 
 type Options = {

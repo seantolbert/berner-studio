@@ -3,6 +3,7 @@ import Script from "next/script";
 import AppHeader from "@/app/components/AppHeader";
 import AppFooter from "@/app/components/AppFooter";
 import "./globals.css";
+import ParallaxBackground from "@/app/components/ParallaxBackground";
 
 const siteName = "Berner Studio";
 const siteDescription = "Custom cutting boards and goods";
@@ -54,7 +55,8 @@ export default function RootLayout({
   const SENTRY_DSN = process.env.SENTRY_DSN;
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen flex flex-col">
+      <body className="antialiased min-h-screen flex flex-col has-parallax-background">
+        <ParallaxBackground />
         <AppHeader />
         {GA_ID ? (
           <>

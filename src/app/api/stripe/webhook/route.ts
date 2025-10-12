@@ -55,7 +55,6 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        console.log("[webhook] payment_intent.succeeded", { id: pi.id, amount: pi.amount, currency: pi.currency });
         await markOrderPaidByPI(pi.id).catch(() => {});
         const paymentMethodId =
           typeof pi.payment_method === "string"
@@ -80,7 +79,6 @@ export async function POST(req: Request) {
       }
       case "payment_intent.amount_capturable_updated": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        console.log("[webhook] payment_intent.amount_capturable_updated", { id: pi.id, amount_capturable: pi.amount_capturable });
         if (pi.capture_method === "manual" && pi.status === "requires_capture") {
           await markOrderAuthorizedByPI(pi.id).catch(() => {});
         }
@@ -88,17 +86,14 @@ export async function POST(req: Request) {
       }
       case "payment_intent.canceled": {
         const pi = event.data.object as Stripe.PaymentIntent;
-        console.log("[webhook] payment_intent.canceled", { id: pi.id, cancellation_reason: pi.cancellation_reason });
         await markOrderCanceledByPI(pi.id).catch(() => {});
         break;
       }
       case "charge.refunded": {
-        const ch = event.data.object as Stripe.Charge;
-        console.log("[webhook] charge.refunded", { id: ch.id, amount_refunded: ch.amount_refunded });
         break;
       }
       default: {
-        console.log("[webhook] unhandled event", event.type);
+        // Intentionally left blank; no logging in production environment
       }
     }
 

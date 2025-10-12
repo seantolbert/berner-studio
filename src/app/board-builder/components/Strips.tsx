@@ -31,7 +31,6 @@ export default function Strips({
       ),
       order: boardData.order.map((o) => ({ ...o })),
     };
-    console.log("Board Data (cleared strip):", next);
     setBoardData(next);
   };
 
@@ -84,8 +83,6 @@ export default function Strips({
     const targetRow = existing ?? Array<string | null>(cols).fill(null);
     targetRow[col] = key;
     next.strips[row] = targetRow;
-    // Log the JSON object after update
-    console.log("Board Data:", next);
     setBoardData(next);
   };
 

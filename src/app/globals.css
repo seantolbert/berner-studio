@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
+/* Global theme tokens and utilities shared across the app */
+
+/* Root scope variables define the base palette and typographic system */
 :root {
   --background: #050505;
   --foreground: #ededed;
   --font-geist-sans: "Inter", "Helvetica Neue", Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-geist-mono: "Menlo", "Consolas", "Liberation Mono", monospace;
+  --parallax-offset: 0px;
 }
 
+/* Tailwind v4 @theme lets us extend tokens without a separate config file */
 @theme inline {
   /* Colors */
   --color-background: var(--background);
@@ -47,6 +52,8 @@
   --spacing-8: 2rem;
 }
 
+/* Fall back to dark mode palette when the system prefers it */
+/* Swap the shimmer gradient when running on a dark theme */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #050505;
@@ -64,6 +71,7 @@
   --color-muted: oklch(92% 0.01 90);
 }
 
+/* Baseline typography and colors applied app-wide */
 body {
   background: var(--background);
   color: var(--foreground);
@@ -72,6 +80,7 @@ body {
     "Segoe UI Emoji";
 }
 
+/* Normalise button layout so Tailwind utilities behave predictably */
 @layer base {
   button {
     display: inline-flex;
@@ -145,8 +154,84 @@ body {
   }
 }
 
+/* Always defer to user motion preferences for accessibility */
+/* Honor reduced-motion preferences for loading placeholders */
 @media (prefers-reduced-motion: reduce) {
   .skeleton-layer {
+    animation: none;
+  }
+}
+
+/* Wrapper class added in layout.tsx to host the parallax layer */
+.has-parallax-background {
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Fixed pseudo-element creates the parallax plane so content stays interactive */
+.has-parallax-background::before {
+  content: "";
+  position: fixed;
+  top: -10vh;
+  left: 0;
+  right: 0;
+  height: 120vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, rgba(5, 5, 5, 0.85) 0%, rgba(5, 5, 5, 0.9) 60%, rgba(5, 5, 5, 0.95) 100%),
+    var(--parallax-image, url("/backgrounds/site-parallax.png"));
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center top;
+  transform: translate3d(0, calc(var(--parallax-offset) * -1), 0);
+  filter: blur(4px);
+  opacity: 0.6;
+  will-change: transform;
+  transition: transform 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .has-parallax-background::before {
+    transform: none;
+  }
+}
+
+/* Hero intro animation shared by text, buttons, and image */
+@keyframes heroFadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Utility classes for staggering hero entrance timing */
+.hero-fade {
+  opacity: 0;
+  transform: translate3d(0, 32px, 0);
+  animation: heroFadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-fade-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.hero-fade-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.hero-fade-delay-300 {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade {
+    opacity: 1;
+    transform: none;
     animation: none;
   }
 }

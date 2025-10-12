@@ -46,9 +46,7 @@ export function useBoardBuilder() {
       if (!prev) return current;
       setHistory((h) => h.slice(0, -1));
       setFuture((f) => [...f, clone(current)]);
-      const nextState = clone(prev);
-      console.log("Undo applied. Board Data:", nextState);
-      return nextState;
+      return clone(prev);
     });
   };
 
@@ -59,9 +57,7 @@ export function useBoardBuilder() {
       if (!nextItem) return current;
       setFuture((f) => f.slice(0, -1));
       setHistory((h) => [...h, clone(current)]);
-      const nextState = clone(nextItem);
-      console.log("Redo applied. Board Data:", nextState);
-      return nextState;
+      return clone(nextItem);
     });
   };
 
@@ -87,7 +83,6 @@ export function useBoardBuilder() {
         reflected: Math.random() < 0.5,
       } as typeof next.order[number];
     });
-    console.log("Randomize applied. Board Data:", next);
     setBoardDataWithHistory(next);
   };
 
@@ -106,7 +101,6 @@ export function useBoardBuilder() {
     setBoardData({ strips, order });
     setHistory([]);
     setFuture([]);
-    console.log("Reset to blank configuration.", { size: s, strips, order });
   };
 
   const loadTemplate = (tpl: BoardTemplate) => {
@@ -120,7 +114,6 @@ export function useBoardBuilder() {
     // Reset history/future so undo doesn't jump back to blank
     setHistory([]);
     setFuture([]);
-    console.log("Template loaded.", { tpl, mappedStrips });
   };
 
   const applyCols = (cols: number) => {
@@ -133,7 +126,6 @@ export function useBoardBuilder() {
         }
         return row.slice(0, cols);
       });
-      console.log(`Size changed to ${cols} cols. Board Data:`, next);
       return next;
     });
   };
@@ -151,7 +143,6 @@ export function useBoardBuilder() {
     setBoardDataWithHistory((prev) => {
       const next = clone(prev);
       next.order = nextOrder.map((o) => ({ ...o }));
-      console.log("Row order reordered.", next);
       return next;
     });
   };
@@ -166,7 +157,6 @@ export function useBoardBuilder() {
           reflected: !curr.reflected,
         };
       }
-      console.log("Row reflect toggled.", { rowIndex, reflected: next.order[rowIndex]?.reflected, next });
       return next;
     });
   };
@@ -182,7 +172,6 @@ export function useBoardBuilder() {
         stripNo: desired,
         reflected: curr.reflected,
       };
-      console.log("Row strip changed.", { rowIndex, stripNo: desired, next });
       return next;
     });
   };

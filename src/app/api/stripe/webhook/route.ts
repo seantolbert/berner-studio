@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from "@/lib/env";
-import { markOrderAuthorizedByPI, markOrderCanceledByPI, markOrderPaidByPI, recordPaymentEvent } from "@/lib/orders";
+import {
+  getOrderByPaymentIntentId,
+  markOrderAuthorizedByPI,
+  markOrderCanceledByPI,
+  markOrderPaidByPI,
+  recordPaymentEvent,
+} from "@/lib/orders";
+import { notifyOrderPaid } from "@/lib/orderNotifications";
 
 export const runtime = "nodejs"; // ensure Node runtime for raw body access
 export const dynamic = "force-dynamic";
@@ -70,6 +77,14 @@ export async function POST(req: Request) {
           status: pi.status,
           raw: pi,
         }).catch(() => {});
+        await getOrderByPaymentIntentId(pi.id)
+          .then(async (order) => {
+            if (!order) return;
+            await notifyOrderPaid(order);
+          })
+          .catch((error) => {
+            console.error("[webhook] Failed to dispatch order notifications", { paymentIntentId: pi.id, error });
+          });
         break;
       }
       case "payment_intent.payment_failed": {

@@ -21,6 +21,11 @@ interface ServerEnvShape extends ClientEnvShape {
   ADMIN_PASS?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
+  ORDER_NOTIFY_EMAILS?: string;
+  ORDER_NOTIFY_SMS_NUMBERS?: string;
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_FROM_NUMBER?: string;
   SENTRY_DSN?: string;
 }
 

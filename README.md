@@ -109,6 +109,36 @@ Next steps (optional):
 - Live shipping rates/labels (Shippo/EasyPost).
 - Add PayPal Checkout if needed.
 
+## Order Notifications
+
+This app can notify you (and the customer) when an order is paid:
+
+- Set `RESEND_API_KEY` and `RESEND_FROM_EMAIL` so the app can send email via Resend.
+- Set `ORDER_NOTIFY_EMAILS` (comma-separated) for internal notifications. Defaults to `NEXT_PUBLIC_ADMIN_EMAILS` if omitted.
+- To receive texts, provision Twilio and set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, plus `ORDER_NOTIFY_SMS_NUMBERS` (comma-separated E.164 numbers).
+- Run `supabase db push` after pulling to add the `merchant_notified_at` / `customer_notified_at` columns to `orders`.
+- Customers automatically get a confirmation email using the same Resend transport once payment succeeds.
+
+Example `.env.local` entries:
+
+```bash
+# Resend (email)
+RESEND_API_KEY=re_123456789
+RESEND_FROM_EMAIL=orders@example.com
+ORDER_NOTIFY_EMAILS=owner@example.com,ops@example.com
+
+# Twilio (SMS)
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_FROM_NUMBER=+15551234567
+ORDER_NOTIFY_SMS_NUMBERS=+15557654321,+15559876543
+```
+
+Tips:
+- Separate multiple recipients with commas; whitespace is trimmed automatically.
+- Twilio numbers must be in [E.164](https://www.twilio.com/docs/glossary/what-e164) format (leading `+` and country code).
+- If SMS variables are omitted, the code skips text notifications while still sending email.
+
 ## Lead Time (ETA)
 
 We show estimated delivery windows on the configurator, product pages, and checkout using a small heuristic in `src/lib/leadtime.ts`:

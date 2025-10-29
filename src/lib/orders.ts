@@ -10,6 +10,23 @@ export type OrderItemSnapshot = {
   config?: unknown;
 };
 
+export type OrderRecord = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  amount_cents: number;
+  currency: string;
+  capture_method: "automatic" | "manual";
+  save_card: boolean;
+  email: string | null;
+  stripe_payment_intent_id: string | null;
+  items: OrderItemSnapshot[];
+  metadata: CheckoutDraftMetadata | null;
+  merchant_notified_at: string | null;
+  customer_notified_at: string | null;
+};
+
 export async function createDraftOrder(args: {
   email?: string | null;
   amount_cents: number;
@@ -85,4 +102,35 @@ export async function recordPaymentEvent(args: {
     stripe_charge_id: args.charge_id ?? null,
     raw: args.raw ?? null,
   });
+}
+
+export async function getOrderByPaymentIntentId(piId: string) {
+  if (!adminSupabase) return null;
+  const { data, error } = await adminSupabase
+    .from("orders")
+    .select(
+      "id, created_at, updated_at, status, amount_cents, currency, capture_method, save_card, email, stripe_payment_intent_id, items, metadata, merchant_notified_at, customer_notified_at"
+    )
+    .eq("stripe_payment_intent_id", piId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    ...data,
+    items: (Array.isArray((data as { items?: unknown }).items) ? (data as { items: OrderItemSnapshot[] }).items : []) as OrderItemSnapshot[],
+    metadata: ((data as { metadata?: CheckoutDraftMetadata | null }).metadata ?? null) as CheckoutDraftMetadata | null,
+  } as OrderRecord;
+}
+
+export async function markOrderNotified(orderId: string, notifications: { merchant?: boolean; customer?: boolean }) {
+  if (!adminSupabase) return;
+  const updates: Record<string, string> = {};
+  const now = new Date().toISOString();
+  if (notifications.merchant) updates.merchant_notified_at = now;
+  if (notifications.customer) updates.customer_notified_at = now;
+  if (!Object.keys(updates).length) return;
+  await adminSupabase
+    .from("orders")
+    .update(updates)
+    .eq("id", orderId);
 }

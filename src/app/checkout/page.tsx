@@ -368,7 +368,7 @@ export default function CheckoutPage() {
             save_card: saveCard,
             description: "BSFront order",
             shippingMethod,
-            promoCode: appliedPromo,
+            promoCode: appliedPromo ?? undefined,
             billingSameAsShipping: billingSameRef.current,
             contact: sanitizedContact,
             shippingAddress: sanitizedShipping,

@@ -29,6 +29,15 @@ const ServerEnvSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
 
+  // Order notifications
+  ORDER_NOTIFY_EMAILS: z.string().optional(),
+  ORDER_NOTIFY_SMS_NUMBERS: z.string().optional(),
+
+  // SMS (Twilio)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_FROM_NUMBER: z.string().optional(),
+
   // Observability
   SENTRY_DSN: z.string().optional(),
 });
@@ -63,6 +72,11 @@ const rawEnv = {
   ADMIN_PASS: process.env.ADMIN_PASS,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+  ORDER_NOTIFY_EMAILS: process.env.ORDER_NOTIFY_EMAILS,
+  ORDER_NOTIFY_SMS_NUMBERS: process.env.ORDER_NOTIFY_SMS_NUMBERS,
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+  TWILIO_FROM_NUMBER: process.env.TWILIO_FROM_NUMBER,
   SENTRY_DSN: process.env.SENTRY_DSN,
 };
 

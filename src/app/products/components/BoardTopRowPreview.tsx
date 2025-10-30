@@ -35,7 +35,7 @@ export default function BoardTopRowPreview({
 }: Props) {
   const { colors, colCount } = useMemo(() => {
     const cols = strips[0]?.length ?? 12;
-    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    const rows = size === "small" ? 10 : size === "regular" ? 14 : 17;
     const effectiveOrder = (order && order.length
       ? order
       : Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : (strip3Enabled ? 3 : 2), reflected: false }))

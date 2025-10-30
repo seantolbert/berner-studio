@@ -27,9 +27,14 @@ export function BoardPreviewPanel({
   brassFeet,
   edgeOption,
 }: BoardPreviewPanelProps) {
-  const normalizedSize: "small" | "regular" = boardSize === "large" ? "regular" : boardSize;
+  const sizeMeta: Record<BoardSize, { width: number; height: number; rows: number }> = {
+    small: { width: 9.5, height: 9.5, rows: 11 },
+    regular: { width: 10, height: 14, rows: 15 },
+    large: { width: 12, height: 16, rows: 17 },
+  };
+  const meta = sizeMeta[boardSize] ?? sizeMeta.regular;
   const cols = layout.strips[0]?.length ?? 12;
-  const rows = normalizedSize === "small" ? 11 : 15;
+  const rows = meta.rows;
   const defaultOrder = Array.from({ length: rows }, (_, index) => ({
     stripNo: index % 2 === 0 ? 1 : 2,
     reflected: false,
@@ -38,7 +43,7 @@ export function BoardPreviewPanel({
   const cellPx = 12;
   const wPx = cols * cellPx;
   const hPx = rows * cellPx;
-  const heightInches = normalizedSize === "regular" ? 14 : 9.5;
+  const heightInches = meta.height;
   const fmtIn = (value: number) =>
     Math.abs(value - Math.round(value)) < 0.05 ? String(Math.round(value)) : value.toFixed(1);
 
@@ -72,7 +77,7 @@ export function BoardPreviewPanel({
             <BoardTopRowPreview
               strips={layout.strips}
               order={layout.order}
-              size={normalizedSize}
+              size={boardSize}
               strip3Enabled={layout.strips.length >= 3}
               edgeProfile={edgeProfile}
               borderRadius={borderRadius}
@@ -87,7 +92,7 @@ export function BoardPreviewPanel({
             <div className="absolute -left-1 top-0 w-2 h-px rotate-90 bg-current" />
             <div className="absolute -right-1 top-0 w-2 h-px -rotate-90 bg-current" />
             <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 px-1 bg-background text-[11px] opacity-80 leading-none">
-              {normalizedSize === "regular" ? "10" : "9.5"}″
+              {fmtIn(meta.width)}″
             </div>
           </div>
         </div>

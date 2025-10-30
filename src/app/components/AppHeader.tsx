@@ -15,6 +15,26 @@ export default function AppHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement | null>(null);
   const [cartCount, setCartCount] = useState(0);
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const animationState = useRef({ raf: 0, activeHref: "" });
+  const [indicatorRect, setIndicatorRect] = useState<{ width: number; left: number } | null>(null);
+
+  const updateIndicator = () => {
+    const root = navRef.current;
+    if (!root || !root.offsetParent) {
+      setIndicatorRect(null);
+      return;
+    }
+    const active = root.querySelector<HTMLAnchorElement>('[data-navlink][aria-current="page"]');
+    if (!active) {
+      setIndicatorRect(null);
+      return;
+    }
+    const rootRect = root.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    const left = activeRect.left - rootRect.left;
+    setIndicatorRect({ width: activeRect.width, left });
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -43,7 +63,10 @@ export default function AppHeader() {
 
     readCartCount();
 
-    const handleCartUpdate = () => readCartCount();
+    const handleCartUpdate = () => {
+      readCartCount();
+      queueMicrotask(updateIndicator);
+    };
 
     window.addEventListener("cart:update", handleCartUpdate);
     window.addEventListener("storage", handleCartUpdate);
@@ -53,6 +76,26 @@ export default function AppHeader() {
       window.removeEventListener("storage", handleCartUpdate);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const state = animationState.current;
+    if (state.raf) cancelAnimationFrame(state.raf);
+
+    state.raf = requestAnimationFrame(() => {
+      updateIndicator();
+      state.raf = 0;
+    });
+
+    const handleResize = () => updateIndicator();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      if (state.raf) cancelAnimationFrame(state.raf);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [pathname, cartCount]);
 
   const containerClass = isBuilder
     ? "relative z-50 w-full border-b border-black/10 dark:border-white/10 bg-background"
@@ -77,7 +120,18 @@ export default function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-2 ml-auto md:flex-row-reverse">
-          <nav className="hidden md:flex items-center gap-1 justify-end" aria-label="Main">
+          <nav ref={navRef} className="hidden md:flex items-center gap-1 main-nav-desktop relative" aria-label="Main">
+            {indicatorRect ? (
+              <div
+                className="pointer-events-none absolute bottom-0 h-[3px] rounded-full bg-emerald-500 transition-[transform,width] duration-[400ms]"
+                style={{
+                  width: `${indicatorRect.width}px`,
+                  transform: `translateX(${indicatorRect.left}px)`,
+                  transitionTimingFunction: "cubic-bezier(0.65, 0, 0.35, 1)",
+                }}
+                aria-hidden="true"
+              />
+            ) : null}
             {mainNav.map((it) => (
               it.href === "/cart" ? (
                 <Link
@@ -114,12 +168,13 @@ export default function AppHeader() {
                 <Link
                   key={it.href}
                   href={it.href}
+                  data-navlink={!it.cta ? "true" : undefined}
                   className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
                     it.cta
                       ? "ml-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                       : isActive(it.href)
-                        ? "underline underline-offset-4 decoration-2"
-                        : ""
+                        ? "text-foreground"
+                        : "opacity-80"
                   }`}
                   aria-current={isActive(it.href) ? "page" : undefined}
                 >

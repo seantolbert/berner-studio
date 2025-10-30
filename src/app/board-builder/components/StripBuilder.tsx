@@ -6,6 +6,7 @@ import AvailableWoods from "./AvailableWoods";
 import Strips from "./Strips";
 import { useModal } from "./modal/ModalProvider";
 import type { BoardLayout } from "@/types/board";
+import type { WoodBreakdownEntry } from "../pricing";
 
 type Props = {
   boardData: BoardLayout;
@@ -13,7 +14,14 @@ type Props = {
   strip3Enabled: boolean;
   onToggleStrip3: () => void;
   onConfirmComplete?: () => void;
-  pricing?: { total: number; cellCount: number; base: number; variable: number; extrasThirdStrip: number };
+  pricing?: {
+    total: number;
+    cellCount: number;
+    base: number;
+    variable: number;
+    extrasThirdStrip: number;
+    woodBreakdown: WoodBreakdownEntry[];
+  };
 };
 
 export default function StripBuilder({
@@ -61,10 +69,21 @@ export default function StripBuilder({
                     <span className="text-sm opacity-70">Base</span>
                     <span className="text-sm font-medium">{formatCurrency(pricing.base)}</span>
                   </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm opacity-70">Sticks</span>
-                    <span className="text-sm font-medium">{formatCurrency(pricing.variable)}</span>
-                  </div>
+                  {pricing.woodBreakdown.length ? (
+                    pricing.woodBreakdown.map((entry) => (
+                      <div key={entry.key} className="flex items-baseline justify-between">
+                        <span className="text-sm opacity-70">
+                          {entry.label} ({entry.count} {entry.count === 1 ? "stick" : "sticks"})
+                        </span>
+                        <span className="text-sm font-medium">{formatCurrency(entry.total)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm opacity-70">Sticks</span>
+                      <span className="text-sm font-medium">{formatCurrency(pricing.variable)}</span>
+                    </div>
+                  )}
                   {pricing.extrasThirdStrip > 0 && (
                     <div className="flex items-baseline justify-between">
                       <span className="text-sm opacity-70">3rd strip</span>

@@ -1,5 +1,5 @@
 import { formatCurrency } from "@/lib/money";
-import { PRICING_SSO } from "@/features/board-builder/lib/pricing";
+import { PRICING_SSO, type WoodBreakdownEntry } from "@/features/board-builder/lib/pricing";
 
 type CostSummaryProps = {
   base: number;
@@ -10,6 +10,7 @@ type CostSummaryProps = {
   total: number;
   etaLabel?: string;
   hideCellsRow?: boolean;
+  woodBreakdown?: WoodBreakdownEntry[];
 };
 
 export default function CostSummary({
@@ -21,6 +22,7 @@ export default function CostSummary({
   total,
   etaLabel,
   hideCellsRow = false,
+  woodBreakdown = [],
 }: CostSummaryProps) {
   return (
     <div className="space-y-1 text-sm">
@@ -29,12 +31,23 @@ export default function CostSummary({
         <span>{formatCurrency(base)}</span>
       </div>
       {!hideCellsRow ? (
-        <div className="flex justify-between">
-          <span>
-            Cells ({cellCount} × {formatCurrency(PRICING_SSO.cellPrice)})
-          </span>
-          <span>{formatCurrency(variable)}</span>
-        </div>
+        woodBreakdown.length ? (
+          woodBreakdown.map((entry) => (
+            <div key={entry.key} className="flex justify-between">
+              <span>
+                {entry.label} ({entry.count} {entry.count === 1 ? "stick" : "sticks"})
+              </span>
+              <span>{formatCurrency(entry.total)}</span>
+            </div>
+          ))
+        ) : (
+          <div className="flex justify-between">
+            <span>
+              Cells ({cellCount} × {formatCurrency(PRICING_SSO.cellPrice)})
+            </span>
+            <span>{formatCurrency(variable)}</span>
+          </div>
+        )
       ) : null}
       {juiceGrooveEnabled && (
         <div className="flex justify-between">

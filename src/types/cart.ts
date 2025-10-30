@@ -12,6 +12,9 @@ export type CartConfig = {
   strip3Enabled: boolean;
   boardData: BoardLayout;
   extras: BoardExtras;
+  edgeOption?: string | null;
+  handleStyle?: "none" | "glide" | "lift";
+  brassFeet?: boolean;
 };
 
 export type CartItem = {

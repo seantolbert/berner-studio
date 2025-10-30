@@ -53,7 +53,18 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const updates: Record<string, unknown> = {};
   if (b.name) updates.name = b.name;
   if (b.price_cents != null) updates.price_cents = b.price_cents;
-  if (b.category) updates.category = b.category;
+  if (b.category !== undefined) {
+    const nextCategory = (b.category || "").toLowerCase().trim();
+    if (!nextCategory) return NextResponse.json({ error: "Category cannot be empty" }, { status: 400 });
+    const { data: categoryRow, error: categoryError } = await adminSupabase
+      .from("product_categories")
+      .select("id")
+      .eq("slug", nextCategory)
+      .maybeSingle();
+    if (categoryError) return NextResponse.json({ error: categoryError.message }, { status: 500 });
+    if (!categoryRow) return NextResponse.json({ error: "Category not found" }, { status: 400 });
+    updates.category = nextCategory;
+  }
   if (b.short_desc !== undefined) updates.short_desc = b.short_desc;
   if (b.long_desc !== undefined) updates.long_desc = b.long_desc;
   if (b.status) updates.status = b.status;
@@ -85,16 +96,29 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const auth = requireAdminBasicAuth(_req);
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = requireAdminBasicAuth(req);
   if (auth) return auth;
   if (!adminSupabase) return NextResponse.json({ error: "Admin not configured" }, { status: 500 });
   const { id } = await ctx.params;
-  // Soft delete: set deleted_at and archived status
+  const hardDelete = (() => {
+    try {
+      return req.nextUrl.searchParams.get("hard") === "true";
+    } catch {
+      return false;
+    }
+  })();
+
+  if (hardDelete) {
+    const { error } = await adminSupabase.from("products").delete().eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, deleted: true });
+  }
+
   const { error } = await adminSupabase
     .from("products")
     .update({ deleted_at: new Date().toISOString(), status: "archived" })
     .eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, archived: true });
 }

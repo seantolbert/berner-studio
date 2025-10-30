@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     collection: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
     card_label: z.string().max(60).nullable().optional(),
+    product_template_id: z.string().uuid().optional(),
   });
   const jsonUnknown = await req.json().catch(() => undefined);
   const parsed = Body.safeParse(jsonUnknown);
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
   const name = b.name;
   const slug = slugify(b.slug || name);
   const price_cents = b.price_cents;
-  const category = b.category;
+  const category = (b.category || "").toLowerCase().trim();
   const short_desc = b.short_desc ?? null;
   const long_desc = b.long_desc ?? null;
   const status = b.status ?? "draft";
@@ -60,15 +61,38 @@ export async function POST(req: NextRequest) {
   let tags: string[] | undefined = undefined;
   if (Array.isArray(b.tags)) tags = b.tags;
   if (b.collection) tags = Array.from(new Set([...(tags || []), b.collection]));
+  const productTemplateId =
+    category === "boards" && typeof b.product_template_id === "string" ? b.product_template_id : null;
 
   if (!name || !slug || !category) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+
+  const { data: categoryRow, error: categoryError } = await adminSupabase
+    .from("product_categories")
+    .select("id")
+    .eq("slug", category)
+    .maybeSingle();
+  if (categoryError) return NextResponse.json({ error: categoryError.message }, { status: 500 });
+  if (!categoryRow) return NextResponse.json({ error: "Category not found" }, { status: 400 });
 
   const { data: existing } = await adminSupabase.from("products").select("id").eq("slug", slug).maybeSingle();
   if (existing) return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
 
+  const insertPayload: Record<string, unknown> = {
+    name,
+    slug,
+    price_cents,
+    category,
+    short_desc,
+    long_desc,
+    status,
+    card_label,
+    ...(tags ? { tags } : {}),
+  };
+  if (productTemplateId) insertPayload.product_template_id = productTemplateId;
+
   const { data, error } = await adminSupabase
     .from("products")
-    .insert({ name, slug, price_cents, category, short_desc, long_desc, status, card_label, ...(tags ? { tags } : {}) })
+    .insert(insertPayload)
     .select("id, slug")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

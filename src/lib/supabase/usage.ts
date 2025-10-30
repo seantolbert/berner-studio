@@ -1,6 +1,15 @@
 import { supabase } from "./client";
 import type { BoardLayout, BoardRowOrder, BoardSize, BoardStrips, BoardTemplate, BuilderWood } from "@/types/board";
 
+type SupabaseError = { message?: string } | null;
+
+function throwSupabaseError(error: SupabaseError, fallbackMessage: string): never {
+  const message = error && typeof error.message === "string" && error.message.trim().length
+    ? error.message
+    : fallbackMessage;
+  throw new Error(message);
+}
+
 const BOARD_SIZES: ReadonlyArray<BoardSize> = ["small", "regular", "large"] as const;
 
 function toBoardSize(value: unknown): BoardSize {
@@ -109,7 +118,7 @@ export async function saveBoard({
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throwSupabaseError(error, "Failed to save board");
   return insertData;
 }
 
@@ -119,7 +128,7 @@ export async function listTemplates(): Promise<BoardTemplate[]> {
     .from("default_templates")
     .select('id, name, size, strip3_enabled, strips, "order"')
     .order("created_at", { ascending: true });
-  if (error) throw error;
+  if (error) throwSupabaseError(error, "Failed to load templates");
   const rows = (data ?? []) as Array<Record<string, unknown>>;
   return rows
     .map((row) => normalizeBoardTemplate(row))
@@ -145,7 +154,7 @@ export async function saveDefaultTemplate(args: {
     .insert(payload)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throwSupabaseError(error, "Failed to save default template");
   return data;
 }
 
@@ -181,7 +190,7 @@ export async function saveProductTemplate(args: {
     .insert(payload)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throwSupabaseError(error, "Failed to save product template");
   return data;
 }
 
@@ -194,7 +203,15 @@ export async function listMyBoardTemplates(): Promise<BoardTemplate[]> {
     .select("id, name, size, strip3_enabled, data, updated_at")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
-  if (error) throw error;
+  if (error) {
+    if (typeof error.message === "string" && error.message.includes("public.boards")) {
+      if (typeof window !== "undefined") {
+        console.warn("Boards table not found; returning empty list.");
+      }
+      return [];
+    }
+    throwSupabaseError(error, "Failed to load your boards");
+  }
   const rows = (data ?? []) as Array<Record<string, unknown>>;
   return rows
     .map((row) => {
@@ -225,7 +242,7 @@ export async function listEnabledBuilderWoods(): Promise<BuilderWood[]> {
     .select("key,name,color,enabled,price_per_stick")
     .eq("enabled", true)
     .order("name", { ascending: true });
-  if (error) throw error;
+  if (error) throwSupabaseError(error, "Failed to load woods");
   return ((data as Array<Record<string, unknown>> | null) ?? [])
     .map((row) => normalizeBuilderWood(row))
     .filter((row): row is BuilderWood => Boolean(row));

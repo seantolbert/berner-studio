@@ -109,3 +109,31 @@ export function getDynamicWoodsVersion(): number {
 export function getAvailableWoodKeys(): string[] {
   return DYNAMIC_WOOD_KEYS.slice();
 }
+
+export function getNameForToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  const byKey = woodByKey[lower];
+  if (byKey?.name) return byKey.name;
+  const dyn = DYNAMIC_WOODS[lower] ?? DYNAMIC_WOODS[trimmed];
+  if (dyn) return titleCaseWords(trimmed.replace(/[_-]+/g, " "));
+  if (trimmed.startsWith("#") || trimmed.startsWith("rgb")) return trimmed;
+  return titleCaseWords(trimmed.replace(/[_-]+/g, " "));
+}
+
+export function normalizeTokenKey(token: string | null | undefined): string {
+  if (token == null) return "__unknown__";
+  const trimmed = token.trim();
+  if (!trimmed) return "__unknown__";
+  return trimmed.toLowerCase();
+}
+
+function titleCaseWords(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}

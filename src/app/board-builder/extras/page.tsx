@@ -85,7 +85,7 @@ export default function ExtrasPage() {
 
   const topRowColors = useMemo(() => {
     const cols = boardData.strips[0]?.length ?? 13;
-    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 17;
     const fallbackOrder: BoardRowOrder[] = Array.from({ length: rows }, (_, i) => ({
       stripNo: i % 2 === 0 ? 1 : 2,
       reflected: false,
@@ -99,7 +99,7 @@ export default function ExtrasPage() {
 
   const cornerColors2x2 = useMemo(() => {
     const cols = boardData.strips[0]?.length ?? 13;
-    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 17;
     const fallbackOrder: BoardRowOrder[] = Array.from({ length: rows }, (_, i) => ({
       stripNo: i % 2 === 0 ? 1 : 2,
       reflected: false,
@@ -231,6 +231,7 @@ export default function ExtrasPage() {
                   brassFeetEnabled={brassFeet}
                   total={grandTotal}
                   etaLabel={eta.label}
+                  woodBreakdown={basePricing.woodBreakdown}
                 />
                 <div className="pt-3 flex justify-end">
                   <AddToCartButton
@@ -251,6 +252,9 @@ export default function ExtrasPage() {
                         strip3Enabled,
                         boardData,
                         extras: { edgeProfile, borderRadius, chamferSize, grooveEnabled },
+                        edgeOption,
+                        handleStyle: stripSampleOption,
+                        brassFeet,
                       },
                       image: createBoardPreviewDataUrl({
                         layout: boardData,

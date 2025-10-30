@@ -16,7 +16,7 @@ export default function BoardTemplatePreview({ strips, order, size, strip3Enable
   const cellPx = 12;
   const effectiveOrder = useMemo(() => {
     if (order && order.length) return order;
-    const rows = size === "small" ? 10 : size === "regular" ? 14 : 16;
+    const rows = size === "small" ? 10 : size === "regular" ? 14 : 17;
     return Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : (strip3Enabled ? 3 : 2), reflected: false }));
   }, [order, size, strip3Enabled]);
 

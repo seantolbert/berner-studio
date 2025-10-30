@@ -1,4 +1,4 @@
-import { getPriceForToken } from "@/features/board-builder/lib/woods";
+import { getPriceForToken, getNameForToken, normalizeTokenKey } from "@/features/board-builder/lib/woods";
 
 export type BoardSize = "small" | "regular" | "large";
 
@@ -15,6 +15,14 @@ export const PRICING_SSO = {
     thirdStrip: 0,
     brassFeet: 0,
   },
+};
+
+export type WoodBreakdownEntry = {
+  key: string;
+  label: string;
+  count: number;
+  unitPrice: number;
+  total: number;
 };
 
 export function countFilledCells(strips: (string | null)[][], strip3Enabled: boolean) {
@@ -38,14 +46,32 @@ export function calculateBoardPrice(args: {
   const rows = args.strip3Enabled ? [0, 1, 2] : [0, 1];
   let variable = 0;
   let cellCount = 0;
+  const breakdownMap = new Map<string, { label: string; count: number; price: number }>();
 
   for (const r of rows) {
     const row = args.strips[r] || [];
     for (const cell of row) {
       if (cell !== null) {
         cellCount += 1;
-        const price = getPriceForToken(cell);
-        variable += typeof price === "number" ? price : PRICING_SSO.cellPrice;
+        const tokenString = typeof cell === "string" ? cell : String(cell);
+        const pricePerStick = getPriceForToken(tokenString);
+        const effectivePrice = typeof pricePerStick === "number" ? pricePerStick : PRICING_SSO.cellPrice;
+        variable += effectivePrice;
+
+        const key = normalizeTokenKey(tokenString);
+        const label =
+          getNameForToken(tokenString) ??
+          (key === "__unknown__"
+            ? "Custom"
+            : tokenString.trim().length
+              ? tokenString.trim()
+              : "Custom");
+
+        const current = breakdownMap.get(key) ?? { label, count: 0, price: 0 };
+        current.label = label;
+        current.count += 1;
+        current.price += effectivePrice;
+        breakdownMap.set(key, current);
       }
     }
   }
@@ -57,7 +83,17 @@ export function calculateBoardPrice(args: {
 
   const extrasThirdStrip = args.strip3Enabled ? PRICING_SSO.extras.thirdStrip : 0;
   const total = base + variable + extrasThirdStrip;
-  return { base, variable, cellCount, total, extrasThirdStrip };
+  const woodBreakdown: WoodBreakdownEntry[] = Array.from(breakdownMap.entries()).map(
+    ([key, { label, count, price }]) => ({
+      key,
+      label,
+      count,
+      total: price,
+      unitPrice: count ? price / count : 0,
+    })
+  );
+
+  return { base, variable, cellCount, total, extrasThirdStrip, woodBreakdown };
 }
 
 export function setRuntimePricing(patch: Partial<{

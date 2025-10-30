@@ -2,6 +2,7 @@ import Link from "next/link";
 import { adminSupabase } from "@/lib/supabase/serverAdmin";
 import { formatCurrencyCents } from "@/lib/money";
 import AdminGuard from "@/app/admin/AdminGuard";
+import DeleteProductButton from "./DeleteProductButton";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,15 @@ export default async function AdminProductsPage({
   };
 
   const { data: items, error } = await query!;
+  const categoryLookup = new Map<string, string>();
+  if (adminSupabase) {
+    const { data: categoryRows } = await adminSupabase
+      .from("product_categories")
+      .select("slug, name");
+    for (const row of categoryRows ?? []) {
+      if (row?.slug) categoryLookup.set(row.slug, row.name ?? row.slug);
+    }
+  }
 
   return (
     <main className="min-h-screen w-full p-6">
@@ -130,14 +140,17 @@ export default async function AdminProductsPage({
                     <tr key={p.id} className="border-t border-black/10 dark:border-white/10">
                       <td className="px-3 py-2">{p.name}</td>
                       <td className="px-3 py-2 font-mono text-xs">{p.slug}</td>
-                      <td className="px-3 py-2">{p.category}</td>
+                      <td className="px-3 py-2">{categoryLookup.get(p.category) ?? p.category}</td>
                       <td className="px-3 py-2">{formatCurrencyCents(p.price_cents)}</td>
                       <td className="px-3 py-2"><StatusBadge status={p.status} /></td>
                       <td className="px-3 py-2 whitespace-nowrap">{new Date(p.updated_at).toLocaleString()}</td>
                       <td className="px-3 py-2">
-                        <Link href={`/admin/cms/products/${p.id}`} className="text-sm underline">
-                          Edit
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link href={`/admin/cms/products/${p.id}`} className="text-sm underline">
+                            Edit
+                          </Link>
+                          <DeleteProductButton id={p.id} name={p.name} />
+                        </div>
                       </td>
                     </tr>
                   ))

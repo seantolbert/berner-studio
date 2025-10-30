@@ -224,6 +224,9 @@ export function ProductPageShell({ loading, product, variants, images, template 
                   chamferSize,
                   grooveEnabled,
                 },
+                edgeOption,
+                handleStyle: stripSampleOption,
+                brassFeet,
               },
               ...(breakdown ? { breakdown } : {}),
             }
@@ -306,7 +309,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
               />
               <BoardExtrasControls
                 boardSize={boardSize}
-                onBoardSizeChange={(next) => setBoardSize(next === "large" ? "regular" : next)}
+                onBoardSizeChange={setBoardSize}
                 grooveEnabled={grooveEnabled}
                 setGrooveEnabled={setGrooveEnabled}
                 edgeProfile={edgeProfile}
@@ -337,6 +340,7 @@ export function ProductPageShell({ loading, product, variants, images, template 
                     total={boardPricing.totalCents / 100}
                     etaLabel={etaLabel}
                     hideCellsRow
+                    woodBreakdown={boardPricing.woodBreakdown}
                   />
                 </div>
               ) : null}

@@ -27,7 +27,7 @@ type PostBody = {
   country?: string;
   state?: string;
   postalCode?: string;
-  shippingMethod?: "standard" | "expedited" | "overnight";
+  shippingMethod?: "standard" | "expedited";
   promoCode?: string | null;
   contact?: CheckoutContact | null;
   shippingAddress?: CheckoutAddress | null;
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
       country: z.string().optional(),
       state: z.string().optional(),
       postalCode: z.string().optional(),
-      shippingMethod: z.enum(["standard", "expedited", "overnight"]).optional(),
+      shippingMethod: z.enum(["standard", "expedited"]).optional(),
       promoCode: z.string().optional(),
       contact: ContactSchema,
       shippingAddress: AddressSchema,
@@ -154,7 +154,6 @@ export async function POST(req: Request) {
     const shippingAdjustments: Record<NonNullable<PostBody["shippingMethod"]>, number> = {
       standard: 0,
       expedited: 1_500,
-      overnight: 3_500,
     };
     const shippingSurcharge = shippingAdjustments[shippingMethod] ?? 0;
     const shippingTotal = quote.shipping + shippingSurcharge;
@@ -175,7 +174,7 @@ export async function POST(req: Request) {
     const params: Stripe.PaymentIntentCreateParams = {
       amount: finalTotal,
       currency: quote.currency,
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ["card"],
       capture_method: capture === "manual" ? "manual" : "automatic",
       metadata: {
         app: "bsfront",

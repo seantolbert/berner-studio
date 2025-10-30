@@ -38,7 +38,7 @@ export default function BoardPreview({
   );
   const effectiveOrder = useMemo(() => {
     if (boardData.order && boardData.order.length) return boardData.order;
-    const rows = size === "small" ? 11 : size === "regular" ? 15 : 16;
+    const rows = size === "small" ? 11 : size === "regular" ? 15 : 17;
     return Array.from({ length: rows }, (_, i) => ({
       stripNo: i % 2 === 0 ? 1 : 2,
       reflected: false,

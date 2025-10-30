@@ -55,10 +55,10 @@ export function BoardExtrasControls({
   showSizeControl = true,
 }: BoardExtrasControlsProps) {
   const sizeOptions: Array<{ key: BoardSize; label: string }> = [
-    { key: "small", label: "Small" },
-    { key: "regular", label: "Regular" },
+    { key: "small", label: 'Small (9.5" × 9.5")' },
+    { key: "regular", label: 'Regular (10" × 14")' },
+    { key: "large", label: 'Large (12" × 16")' },
   ];
-  const normalizedSize: "small" | "regular" = boardSize === "large" ? "regular" : boardSize;
 
   return (
     <div className="w-full rounded-md border border-black/10 dark:border-white/10 p-4 space-y-4">
@@ -75,9 +75,9 @@ export function BoardExtrasControls({
                 key={opt.key}
                 type="button"
                 onClick={() => onBoardSizeChange(opt.key)}
-                aria-pressed={normalizedSize === opt.key}
+                aria-pressed={boardSize === opt.key}
                 className={`h-10 px-3 rounded-md border text-sm transition-colors ${
-                  normalizedSize === opt.key
+                  boardSize === opt.key
                     ? "border-emerald-500 ring-2 ring-emerald-200"
                     : "border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
                 }`}
@@ -195,7 +195,7 @@ export function BoardExtrasControls({
               });
             })()}
         </div>
-        {showBrassControl && normalizedSize === "small" && (
+        {showBrassControl && boardSize === "small" && (
           <div className="mt-4 flex items-center justify-between rounded-md border border-black/10 dark:border-white/10 p-3">
             <div>
               <div className="text-sm font-medium">Brass feet</div>

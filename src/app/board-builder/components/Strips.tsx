@@ -1,6 +1,7 @@
 "use client";
 
 import { styleForToken } from "./woods";
+import type { CSSProperties } from "react";
 import { PRICING_SSO } from "../pricing";
 import { formatCurrency } from "@/lib/money";
 import { useModal } from "./modal/ModalProvider";
@@ -23,8 +24,10 @@ export default function Strips({
 }: Props) {
   const { open, close } = useModal();
 
+  const defaultCols = boardData.strips[0]?.length ?? 13;
+
   const clearRow = (row: number) => {
-    const cols = boardData.strips[row]?.length ?? 13;
+    const cols = boardData.strips[row]?.length ?? defaultCols;
     const next: BoardLayout = {
       strips: boardData.strips.map((r, ri) =>
         ri === row ? Array<string | null>(cols).fill(null) : r.slice()
@@ -79,7 +82,7 @@ export default function Strips({
       order: boardData.order.map((o) => ({ ...o })),
     };
     const existing = next.strips[row];
-    const cols = boardData.strips[row]?.length ?? 13;
+    const cols = boardData.strips[row]?.length ?? defaultCols;
     const targetRow = existing ?? Array<string | null>(cols).fill(null);
     targetRow[col] = key;
     next.strips[row] = targetRow;
@@ -113,27 +116,25 @@ export default function Strips({
         <div
           className={`h-full flex items-center justify-center md:justify-start min-w-max gap-x-1.25`}
         >
-          {(boardData.strips[row] ?? []).map((cellColor, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => handlePaint(row, i)}
-              className={`h-10 ${
-                (boardData.strips[row]?.length ?? 0) >= 13 ? "w-4" : "w-5"
-              } rounded-sm border border-black/15 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 ${
-                cellColor ? "bg-transparent" : "bg-white/60 dark:bg-black/20"
-              }`}
-              style={
-                cellColor
-                  ? styleForToken(
-                      cellColor,
-                      (boardData.strips[row]?.length ?? 0) >= 13 ? 16 : 20
-                    )
-                  : undefined
-              }
-              aria-label={`Row ${row + 1} cell ${i + 1}`}
-            />
-          ))}
+          {(boardData.strips[row] ?? []).map((cellColor, i) => {
+            const totalCols = boardData.strips[row]?.length ?? defaultCols;
+            const cellPx = totalCols >= 15 ? 14 : totalCols >= 13 ? 16 : 20;
+            const styleProps: CSSProperties = cellColor
+              ? { width: `${cellPx}px`, ...styleForToken(cellColor, cellPx) }
+              : { width: `${cellPx}px` };
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handlePaint(row, i)}
+                className={`h-10 rounded-sm border border-black/15 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 ${
+                  cellColor ? "bg-transparent" : "bg-white/60 dark:bg-black/20"
+                }`}
+                style={styleProps}
+                aria-label={`Row ${row + 1} cell ${i + 1}`}
+              />
+            );
+          })}
         </div>
       </div>
 

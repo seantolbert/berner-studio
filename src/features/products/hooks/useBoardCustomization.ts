@@ -20,7 +20,7 @@ export function useBoardCustomization({ product, template }: BoardCustomizationA
   const [assignedTemplate, setAssignedTemplate] = useState<ProductTemplateDetail | null>(
     template ?? null
   );
-  const [boardSize, setBoardSize] = useState<"small" | "regular">("regular");
+  const [boardSize, setBoardSize] = useState<BoardSize>("regular");
   const [edgeProfile, setEdgeProfile] = useState<"square" | "chamfer" | "roundover">("square");
   const [borderRadius, setBorderRadius] = useState(0);
   const [chamferSize, setChamferSize] = useState(8);
@@ -36,7 +36,7 @@ export function useBoardCustomization({ product, template }: BoardCustomizationA
 
   useEffect(() => {
     if (assignedTemplate) {
-      setBoardSize(assignedTemplate.size === "small" ? "small" : "regular");
+      setBoardSize(assignedTemplate.size);
     } else {
       setBoardSize("regular");
     }
@@ -117,12 +117,13 @@ export function useBoardCustomization({ product, template }: BoardCustomizationA
   const boardPricing = useMemo(() => {
     void pricingVersion;
     if (!isBoardProduct || !assignedTemplate) return null;
-    const sizeKey: BoardSize = boardSize === "regular" ? "regular" : "small";
-    const { base, variable, cellCount, extrasThirdStrip = 0 } = calculateBoardPrice({
+    const sizeKey: BoardSize = boardSize;
+    const priceResult = calculateBoardPrice({
       size: sizeKey,
       strips: assignedTemplate.layout.strips,
       strip3Enabled: assignedTemplate.strip3Enabled,
     });
+    const { base, variable, cellCount, extrasThirdStrip = 0, woodBreakdown } = priceResult;
     const baseCents = Math.round(base * 100);
     const variableCents = Math.round(variable * 100);
     const extrasThirdStripCents = Math.round(extrasThirdStrip * 100);
@@ -132,6 +133,7 @@ export function useBoardCustomization({ product, template }: BoardCustomizationA
       variable,
       cellCount,
       extrasThirdStrip,
+      woodBreakdown,
       baseCents,
       variableCents,
       extrasThirdStripCents,
@@ -155,7 +157,7 @@ export function useBoardCustomization({ product, template }: BoardCustomizationA
   const topRowColors: (string | null)[] = useMemo(() => {
     if (!assignedTemplate) return [];
     const cols = assignedTemplate.layout.strips[0]?.length ?? 12;
-    const rows = boardSize === "small" ? 11 : 15;
+    const rows = boardSize === "small" ? 11 : boardSize === "regular" ? 15 : 17;
     const effectiveOrder = (
       assignedTemplate.layout.order && assignedTemplate.layout.order.length
         ? assignedTemplate.layout.order
@@ -174,7 +176,7 @@ export function useBoardCustomization({ product, template }: BoardCustomizationA
   const cornerColors2x2: (string | null)[][] = useMemo(() => {
     if (!assignedTemplate) return [[], []];
     const cols = assignedTemplate.layout.strips[0]?.length ?? 12;
-    const rows = boardSize === "small" ? 11 : 15;
+    const rows = boardSize === "small" ? 11 : boardSize === "regular" ? 15 : 17;
     const effectiveOrder = (
       assignedTemplate.layout.order && assignedTemplate.layout.order.length
         ? assignedTemplate.layout.order

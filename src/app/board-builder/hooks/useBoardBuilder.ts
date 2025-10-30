@@ -6,15 +6,24 @@ import type { Size } from "../components/preview/useRowDnD";
 import type { BoardTemplate } from "../../templates";
 import type { BoardLayout, BoardRowOrder } from "@/types/board";
 
+const SIZE_CONFIG: Record<Size, { cols: number; rows: number }> = {
+  small: { cols: 13, rows: 11 },
+  regular: { cols: 13, rows: 15 },
+  large: { cols: 15, rows: 17 },
+};
+
 export function useBoardBuilder() {
   const [isOpen, setIsOpen] = useState(false);
   const [strip3Enabled, setStrip3Enabled] = useState(false);
   const [size, setSize] = useState<Size>("regular");
 
-  const [boardData, setBoardData] = useState<BoardLayout>(() => ({
-    strips: Array.from({ length: 3 }, () => Array<string | null>(13).fill(null)),
-    order: Array.from({ length: 15 }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false })),
-  }));
+  const [boardData, setBoardData] = useState<BoardLayout>(() => {
+    const { cols, rows } = SIZE_CONFIG.regular;
+    return {
+      strips: Array.from({ length: 3 }, () => Array<string | null>(cols).fill(null)),
+      order: Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false })),
+    };
+  });
 
   const clone = (layout: BoardLayout): BoardLayout => ({
     strips: layout.strips.map((r) => r.slice()),
@@ -74,7 +83,7 @@ export function useBoardBuilder() {
       return newRow;
     });
     const allowedStrips = strip3Enabled ? [1, 2, 3] : [1, 2];
-    const rowCount = next.order?.length ?? (size === "small" ? 11 : size === "regular" ? 15 : 16);
+    const rowCount = next.order?.length ?? SIZE_CONFIG[size].rows;
     next.order = Array.from({ length: rowCount }, () => {
       const idx = Math.floor(Math.random() * allowedStrips.length);
       const picked = allowedStrips[idx] ?? 1;
@@ -91,11 +100,10 @@ export function useBoardBuilder() {
     setSize(s);
     // No third strip by default
     setStrip3Enabled(false);
-    // Determine columns based on size
-    const cols = s === "large" ? 14 : 13;
+    const { cols, rows } = SIZE_CONFIG[s];
     const strips = Array.from({ length: 3 }, () => Array<string | null>(cols).fill(null));
     // Default order: alternating 1,2 with appropriate count
-    const rowsCount = s === "small" ? 11 : s === "regular" ? 15 : 16;
+    const rowsCount = rows;
     const order: BoardRowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
 
     setBoardData({ strips, order });
@@ -105,12 +113,30 @@ export function useBoardBuilder() {
 
   const loadTemplate = (tpl: BoardTemplate) => {
     // Use wood keys directly; ensure 3 rows exist
-    const mappedStrips: (string | null)[][] = tpl.strips.map((row) => row.slice());
-    while (mappedStrips.length < 3) mappedStrips.push(Array<string | null>(mappedStrips[0]?.length || 13).fill(null));
+    const targetCols = SIZE_CONFIG[tpl.size]?.cols ?? SIZE_CONFIG.regular.cols;
+    const mappedStrips: (string | null)[][] = tpl.strips.map((row) => {
+      const clone = row.slice();
+      if (clone.length === targetCols) return clone;
+      if (clone.length < targetCols) {
+        return [...clone, ...Array<string | null>(targetCols - clone.length).fill(null)];
+      }
+      return clone.slice(0, targetCols);
+    });
+    while (mappedStrips.length < 3) mappedStrips.push(Array<string | null>(targetCols).fill(null));
+
+    const targetRows = SIZE_CONFIG[tpl.size]?.rows ?? SIZE_CONFIG.regular.rows;
+    const defaultOrder: BoardRowOrder[] = Array.from({ length: targetRows }, (_, i) => ({
+      stripNo: i % 2 === 0 ? 1 : tpl.strip3Enabled ? 3 : 2,
+      reflected: false,
+    }));
+    const normalizedOrder: BoardRowOrder[] = defaultOrder.map((fallback, idx) => {
+      const source = tpl.order?.[idx];
+      return source ? { ...source } : fallback;
+    });
 
     setSize(tpl.size);
     setStrip3Enabled(tpl.strip3Enabled);
-    setBoardData({ strips: mappedStrips, order: tpl.order.map((o) => ({ ...o })) });
+    setBoardData({ strips: mappedStrips, order: normalizedOrder });
     // Reset history/future so undo doesn't jump back to blank
     setHistory([]);
     setFuture([]);
@@ -132,10 +158,9 @@ export function useBoardBuilder() {
 
   const handleSelectSize = (s: Size) => {
     setSize(s);
-    if (s === "large") applyCols(14);
-    else applyCols(13);
-    const rowsCount = s === "small" ? 11 : s === "regular" ? 15 : 16;
-    const newOrder: BoardRowOrder[] = Array.from({ length: rowsCount }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
+    const { cols, rows } = SIZE_CONFIG[s];
+    applyCols(cols);
+    const newOrder: BoardRowOrder[] = Array.from({ length: rows }, (_, i) => ({ stripNo: i % 2 === 0 ? 1 : 2, reflected: false }));
     setBoardDataWithHistory((prev) => ({ ...clone(prev), order: newOrder }));
   };
 

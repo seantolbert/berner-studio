@@ -18,7 +18,7 @@ export type CheckoutDraftMetadata = {
   shippingAddress: CheckoutAddress | null;
   billingAddress: CheckoutAddress | null;
   billingSameAsShipping: boolean;
-  shippingMethod: "standard" | "expedited" | "overnight";
+  shippingMethod: "standard" | "expedited";
   shippingSurcharge: number;
   shippingTotal: number;
   promoCode: string | null;

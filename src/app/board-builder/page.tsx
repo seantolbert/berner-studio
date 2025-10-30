@@ -204,6 +204,7 @@ export default function BoardBuilderPage() {
               base: pricing.base,
               variable: pricing.variable,
               extrasThirdStrip: pricing.extrasThirdStrip,
+              woodBreakdown: pricing.woodBreakdown,
             }}
             onConfirmComplete={proceedToExtras}
           />
@@ -219,10 +220,21 @@ export default function BoardBuilderPage() {
                   <span className="opacity-70">Base</span>
                   <span className="tabular-nums font-medium">{formatCurrency(pricing.base)}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="opacity-70">Sticks</span>
-                  <span className="tabular-nums font-medium">{formatCurrency(pricing.variable)}</span>
-                </div>
+                {pricing.woodBreakdown.length ? (
+                  pricing.woodBreakdown.map((entry) => (
+                    <div key={entry.key} className="flex items-center justify-between">
+                      <span className="opacity-70">
+                        {entry.label} ({entry.count} {entry.count === 1 ? "stick" : "sticks"})
+                      </span>
+                      <span className="tabular-nums font-medium">{formatCurrency(entry.total)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="opacity-70">Sticks</span>
+                    <span className="tabular-nums font-medium">{formatCurrency(pricing.variable)}</span>
+                  </div>
+                )}
                 {pricing.extrasThirdStrip > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="opacity-70">3rd strip</span>

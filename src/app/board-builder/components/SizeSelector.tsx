@@ -44,18 +44,18 @@ export default function SizeSelector({ selected, onSelect }: Props) {
           <Item
             value="small"
             label={'9.5" x 9.5"'}
-            shape={
-              <div className="w-8 h-8 rounded-sm border-2 border-current" />
-            }
+            shape={<div className="w-8 h-8 rounded-sm border-2 border-current" />}
           />
           <Item
             value="regular"
             label={'10" x 14"'}
-            shape={
-              <div className="w-6 h-10 rounded-sm border-2 border-current" />
-            }
+            shape={<div className="w-6 h-10 rounded-sm border-2 border-current" />}
           />
-          {/** Large size option removed per request */}
+          <Item
+            value="large"
+            label={'12" x 16"'}
+            shape={<div className="w-8 h-12 rounded-sm border-2 border-current" />}
+          />
         </div>
       </div>
     </section>

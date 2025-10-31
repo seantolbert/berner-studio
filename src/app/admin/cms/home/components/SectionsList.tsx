@@ -1,6 +1,7 @@
 "use client";
 
 import type { AdminHomeSection } from "@/types/home";
+import type { CategoryRecord } from "@/app/admin/cms/products/CategoryManager";
 import SectionCard from "./SectionCard";
 
 type SectionsListProps = {
@@ -13,6 +14,7 @@ type SectionsListProps = {
   onSaveCollectionsOrder: (sectionId: string, collections: AdminHomeSection["collections"]) => void;
   onUpdateCollection: (sectionId: string, collection: { id: string; label: string; href: string }) => void;
   onDeleteCollection: (sectionId: string, collectionId: string) => void;
+  categoryOptions: CategoryRecord[];
 };
 
 export default function SectionsList({
@@ -25,6 +27,7 @@ export default function SectionsList({
   onSaveCollectionsOrder,
   onUpdateCollection,
   onDeleteCollection,
+  categoryOptions,
 }: SectionsListProps) {
   const handleSectionChange = (updated: AdminHomeSection) => {
     onSectionsChange(sections.map((section) => (section.id === updated.id ? updated : section)));
@@ -45,6 +48,7 @@ export default function SectionsList({
           onSaveCollectionsOrder={onSaveCollectionsOrder}
           onUpdateCollection={onUpdateCollection}
           onDeleteCollection={onDeleteCollection}
+          categoryOptions={categoryOptions}
         />
       ))}
     </div>

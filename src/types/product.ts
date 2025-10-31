@@ -53,4 +53,10 @@ export type ProductDetail = {
 };
 
 export type ProductSort = "newest" | "price-asc" | "price-desc";
-export type ProductCategory = "" | "boards" | "bottle-openers" | "apparel";
+export type ProductCategory = string;
+
+export type ProductCategoryRecord = {
+  id: string;
+  name: string;
+  slug: string;
+};

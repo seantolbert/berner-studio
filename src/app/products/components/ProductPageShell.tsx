@@ -143,6 +143,16 @@ export function ProductPageShell({ loading, product, variants, images, template 
     return estimateProductETA().label;
   }, [boardEtaLabel, product]);
 
+  const shippingExpectation = useMemo(() => {
+    if (!product) return null;
+    const category = product.category?.toLowerCase() ?? "";
+    if (category === "boards") return "Ships in up to 14 business days.";
+    if (category === "bottle-openers") return "Ships in up to 7 business days.";
+    if (category === "lime-cutters" || category === "lime cutters") return "Ships in up to 7 business days.";
+    if (category === "apparel") return "Ships in up to 5 business days.";
+    return null;
+  }, [product?.category]);
+
   const disableAdd = product?.category === "apparel" && (!selectedColor || !selectedSize);
 
   const addToCart = () => {
@@ -281,7 +291,6 @@ export function ProductPageShell({ loading, product, variants, images, template 
           <div>
             <h1 className="text-2xl font-semibold">{product.name}</h1>
             <div className="text-lg font-medium mt-1">{formatCurrencyCents(displayPrice)}</div>
-            {etaLabel && !canCustomizeBoard ? <div className="text-xs opacity-70 mt-1">{etaLabel}</div> : null}
           </div>
           {product.short_desc ? (
             <p className="text-sm opacity-80">{product.short_desc}</p>
@@ -292,6 +301,12 @@ export function ProductPageShell({ loading, product, variants, images, template 
                 dangerouslySetInnerHTML={{ __html: product.long_desc }}
               />
             </article>
+          ) : null}
+          {shippingExpectation ? (
+            <div className="rounded-md border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 p-3 text-xs md:text-sm">
+              <div className="font-medium text-sm md:text-base">Shipping expectations</div>
+              <p className="opacity-80 mt-1">{shippingExpectation}</p>
+            </div>
           ) : null}
 
           {canCustomizeBoard && assignedTemplate && (

@@ -3,12 +3,14 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { formatCurrencyCents } from "@/lib/money";
 import {
   fetchProductSummaries,
   fetchBoardCollections,
 } from "@/services/productsClient";
 import type { ProductSummary, ProductCategory, ProductSort } from "@/types/product";
+import { useProductCategories } from "@/app/hooks/useProductCategories";
 
 function parseSort(value: string | null): ProductSort {
   if (value === "price-asc" || value === "price-desc" || value === "newest") return value;
@@ -16,8 +18,8 @@ function parseSort(value: string | null): ProductSort {
 }
 
 function parseCategory(value: string | null): ProductCategory {
-  if (value === "boards" || value === "bottle-openers" || value === "apparel") return value;
-  return "";
+  if (!value) return "";
+  return value;
 }
 
 export default function ProductsPage() {
@@ -43,6 +45,13 @@ function ProductsContent() {
   );
   const [collection, setCollection] = useState<string>(params?.get("collection") || "");
   const [boardCollections, setBoardCollections] = useState<string[]>([]);
+  const { categories: categoryOptions } = useProductCategories();
+  const fallbackCategoryOptions = [
+    { id: "boards", name: "Boards", slug: "boards" },
+    { id: "bottle-openers", name: "Bottle Openers", slug: "bottle-openers" },
+    { id: "apparel", name: "Apparel", slug: "apparel" },
+  ];
+  const displayCategories = categoryOptions.length ? categoryOptions : fallbackCategoryOptions;
 
   useEffect(() => {
     let active = true;
@@ -125,11 +134,32 @@ function ProductsContent() {
         </div>
 
         {/* Category filters */}
-        <div className="mb-4 flex items-center gap-2 text-sm">
-          <button type="button" onClick={()=>{ setPage(1); setCategory(''); setCollection(''); }} className={`h-9 px-3 rounded-md border ${category===''? 'border-emerald-500 text-emerald-700 dark:text-emerald-300':'border-black/10 dark:border-white/10'}`}>All</button>
-          <button type="button" onClick={()=>{ setPage(1); setCategory('boards'); setCollection(''); }} className={`h-9 px-3 rounded-md border ${category==='boards'? 'border-emerald-500 text-emerald-700 dark:text-emerald-300':'border-black/10 dark:border-white/10'}`}>Boards</button>
-          <button type="button" onClick={()=>{ setPage(1); setCategory('bottle-openers'); setCollection(''); }} className={`h-9 px-3 rounded-md border ${category==='bottle-openers'? 'border-emerald-500 text-emerald-700 dark:text-emerald-300':'border-black/10 dark:border-white/10'}`}>Bottle Openers</button>
-          <button type="button" onClick={()=>{ setPage(1); setCategory('apparel'); setCollection(''); }} className={`h-9 px-3 rounded-md border ${category==='apparel'? 'border-emerald-500 text-emerald-700 dark:text-emerald-300':'border-black/10 dark:border-white/10'}`}>Apparel</button>
+        <div className="mb-4 flex items-center gap-2 text-sm flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setPage(1);
+              setCategory("");
+              setCollection("");
+            }}
+            className={`h-9 px-3 rounded-md border ${category === "" ? "border-emerald-500 text-emerald-700 dark:text-emerald-300" : "border-black/10 dark:border-white/10"}`}
+          >
+            All
+          </button>
+          {displayCategories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                setPage(1);
+                setCategory(cat.slug as ProductCategory);
+                setCollection("");
+              }}
+              className={`h-9 px-3 rounded-md border ${category === cat.slug ? "border-emerald-500 text-emerald-700 dark:text-emerald-300" : "border-black/10 dark:border-white/10"}`}
+            >
+              {cat.name}
+            </button>
+          ))}
         </div>
 
         {/* Board collections when Boards is selected */}
@@ -156,10 +186,21 @@ function ProductsContent() {
           <>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {items.map((p) => (
-                <div key={p.slug} className="rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
+                <Link
+                  key={p.slug}
+                  href={`/products/${p.slug}`}
+                  className="group block rounded-lg border border-black/10 dark:border-white/10 overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
                   <div className="relative h-40 bg-gradient-to-br from-black/5 to-black/10 dark:from-white/5 dark:to-white/10 flex items-center justify-center" aria-hidden>
                     {p.primary_image_url ? (
-                      <Image src={p.primary_image_url} alt={p.name} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" unoptimized />
+                      <Image
+                        src={p.primary_image_url}
+                        alt={p.name}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                        className="object-cover transition duration-200 group-hover:scale-[1.02]"
+                        unoptimized
+                      />
                     ) : (
                       <span className="text-xs opacity-70">Image coming soon</span>
                     )}
@@ -172,24 +213,8 @@ function ProductsContent() {
                     ) : null}
                     <div className="text-sm font-medium truncate">{p.name}</div>
                     <div className="text-xs opacity-70">{formatCurrencyCents(p.price_cents)}</div>
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/products/${p.slug}`)}
-                        className="inline-flex h-8 px-3 rounded-md border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10"
-                      >
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/products/${p.slug}`)}
-                        className="inline-flex h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
-                      >
-                        Add to cart
-                      </button>
-                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             {/* Pagination */}

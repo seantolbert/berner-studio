@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AdminHomeSection } from "@/types/home";
+import type { CategoryRecord } from "@/app/admin/cms/products/CategoryManager";
 import { useHomeSections } from "./hooks/useHomeSections";
 import {
   createSection,
@@ -19,6 +20,28 @@ import SectionsList from "./components/SectionsList";
 export default function SectionsManager() {
   const { sections, loading, error, setSections } = useHomeSections();
   const [savingOrder, setSavingOrder] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryRecord[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/categories");
+        const data = await res.json().catch(() => ({}));
+        if (!active) return;
+        if (res.ok && Array.isArray(data?.items)) {
+          setCategoryOptions(data.items as CategoryRecord[]);
+        } else {
+          setCategoryOptions([]);
+        }
+      } catch {
+        if (active) setCategoryOptions([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleAddSection = async () => {
     const title = prompt("Section title");
@@ -155,6 +178,7 @@ export default function SectionsManager() {
         onSaveCollectionsOrder={handleSaveCollectionsOrder}
         onUpdateCollection={handleSaveCollection}
         onDeleteCollection={handleDeleteCollection}
+        categoryOptions={categoryOptions}
       />
       <div className="text-xs opacity-70 mt-2">Product selection UI coming next.</div>
     </section>

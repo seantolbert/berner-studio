@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useProductCategories } from "@/app/hooks/useProductCategories";
 
 export default function AppFooter() {
   const pathname = usePathname() || "/";
+  const { categories } = useProductCategories();
 
   // Hide footer on specific routes
   const hide =
@@ -25,9 +27,21 @@ export default function AppFooter() {
         <div>
           <div className="text-sm font-semibold mb-2">Shop</div>
           <ul className="text-sm space-y-1 opacity-80">
-            <li><Link href="/boards" className="hover:underline">Boards</Link></li>
-            <li><Link href="/bottle-openers" className="hover:underline">Bottle openers</Link></li>
-            <li><a href="#apparel" className="hover:underline">Apparel</a></li>
+            {categories.length === 0 ? (
+              <>
+                <li><Link href="/products?category=boards" className="hover:underline">Boards</Link></li>
+                <li><Link href="/products?category=bottle-openers" className="hover:underline">Bottle openers</Link></li>
+                <li><Link href="/products?category=apparel" className="hover:underline">Apparel</Link></li>
+              </>
+            ) : (
+              categories.map((cat) => (
+                <li key={cat.id}>
+                  <Link href={`/products?category=${encodeURIComponent(cat.slug)}`} className="hover:underline">
+                    {cat.name}
+                  </Link>
+                </li>
+              ))
+            )}
             <li><Link href="/cart" className="hover:underline">Cart</Link></li>
           </ul>
         </div>

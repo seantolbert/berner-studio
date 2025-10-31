@@ -1,6 +1,7 @@
 "use client";
 
 import type { AdminHomeSection } from "@/types/home";
+import type { CategoryRecord } from "@/app/admin/cms/products/CategoryManager";
 import CollectionsList from "./CollectionsList";
 
 type SectionCardProps = {
@@ -14,6 +15,7 @@ type SectionCardProps = {
   onSaveCollectionsOrder: (sectionId: string, collections: AdminHomeSection["collections"]) => void;
   onUpdateCollection: (sectionId: string, collection: { id: string; label: string; href: string }) => void;
   onDeleteCollection: (sectionId: string, collectionId: string) => void;
+  categoryOptions: CategoryRecord[];
 };
 
 export default function SectionCard({
@@ -27,6 +29,7 @@ export default function SectionCard({
   onSaveCollectionsOrder,
   onUpdateCollection,
   onDeleteCollection,
+  categoryOptions,
 }: SectionCardProps) {
   return (
     <div className="rounded-md border border-black/10 dark:border-white/10 p-3">
@@ -96,9 +99,11 @@ export default function SectionCard({
             className="h-9 px-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent"
           >
             <option value="">(Manual selection)</option>
-            <option value="boards">Boards</option>
-            <option value="bottle-openers">Bottle Openers</option>
-            <option value="apparel">Apparel</option>
+            {categoryOptions.map((cat) => (
+              <option key={cat.id} value={cat.slug}>
+                {cat.name}
+              </option>
+            ))}
           </select>
         </label>
       </div>

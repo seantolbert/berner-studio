@@ -33,8 +33,16 @@ export async function fetchProductSummaries(options: {
   if (category) {
     query = query.eq("category", category);
   }
-  if (category === "boards" && collection) {
-    query = query.contains("tags", [collection]);
+  if (collection) {
+    const lower = collection.toLowerCase();
+    const title = lower.replace(/\b\w/g, (c) => c.toUpperCase());
+    const variants = Array.from(new Set([collection, lower, collection.toUpperCase(), title]));
+    const orClause = variants
+      .map((value) => `tags.cs.{${JSON.stringify(value)}}`)
+      .join(",");
+    if (orClause) {
+      query = query.or(orClause);
+    }
   }
 
   if (sort === "newest") {

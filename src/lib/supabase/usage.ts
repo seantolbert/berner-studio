@@ -1,5 +1,6 @@
 import { supabase } from "./client";
 import type { BoardLayout, BoardRowOrder, BoardSize, BoardStrips, BoardTemplate, BuilderWood } from "@/types/board";
+import type { ProductCategoryRecord } from "@/types/product";
 
 type SupabaseError = { message?: string } | null;
 
@@ -246,4 +247,21 @@ export async function listEnabledBuilderWoods(): Promise<BuilderWood[]> {
   return ((data as Array<Record<string, unknown>> | null) ?? [])
     .map((row) => normalizeBuilderWood(row))
     .filter((row): row is BuilderWood => Boolean(row));
+}
+
+export async function listProductCategoriesPublic(): Promise<ProductCategoryRecord[]> {
+  const { data, error } = await supabase
+    .from("product_categories")
+    .select("id,name,slug")
+    .order("name", { ascending: true });
+  if (error) throwSupabaseError(error, "Failed to load categories");
+  return ((data as Array<Record<string, unknown>> | null) ?? [])
+    .map((row) => {
+      const id = ensureId(row.id);
+      const name = typeof row.name === "string" ? row.name : null;
+      const slug = typeof row.slug === "string" ? row.slug : null;
+      if (!id || !name || !slug) return null;
+      return { id, name, slug } satisfies ProductCategoryRecord;
+    })
+    .filter((row): row is ProductCategoryRecord => Boolean(row));
 }
